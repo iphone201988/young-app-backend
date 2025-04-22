@@ -2,7 +2,8 @@ import mongoose from "mongoose";
 import { NextFunction, Request, Response } from "express";
 import jwt from "jsonwebtoken";
 import otpGenerator from "otp-generator";
-
+import { encode } from "hi-base32";
+import { randomBytes } from "crypto";
 
 export const connectToDB = () => mongoose.connect(process.env.MONGO_URI);
 
@@ -13,7 +14,6 @@ export const TryCatch =
 export const generateJwtToken = (payload: any) => {
   return jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: "1d" });
 };
-
 
 export const generateRandomString = (length: number): string => {
   const characters =
@@ -50,6 +50,12 @@ export const getFiles = (req: Request, fileNames: Array<string>) => {
   if (Object.keys(files).length) return files;
 
   return null;
+};
+
+export const generateBase32Secret = () => {
+  const buffer = randomBytes(15);
+  const base32 = encode(buffer).replace(/=/g, "").substring(0, 24);
+  return base32;
 };
 
 type ResponseData = Record<string, any>;

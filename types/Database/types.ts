@@ -37,6 +37,8 @@ export interface UserModel extends Document {
   isRegistrationCompleted: boolean;
   isDeleted: boolean;
   stripeCustomerId: string;
+  packageName: string;
+  secret: string;
   unVerifiedTempCredentials: {
     email: string;
   };

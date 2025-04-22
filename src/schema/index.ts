@@ -75,13 +75,20 @@ export const ObjectIdValidation = (key: string, isRequired: boolean = true) => {
 };
 
 export const passwordValidation = () => {
-  return Joi.string().min(6).max(50).required().messages({
-    "string.base": "Password should be a type of text.",
-    "string.empty": "Password cannot be empty.",
-    "string.min": "Password should have at least 6 characters.",
-    "string.max": "Password should not exceed 50 characters.",
-    "any.required": "Password is required.",
-  });
+  return Joi.string()
+    .min(12)
+    .max(50)
+    .pattern(/^(?=.*[a-z])(?=.*[A-Z])(?=.*[^a-zA-Z0-9]).{12,}$/)
+    .required()
+    .messages({
+      "string.base": "Password should be a type of text.",
+      "string.empty": "Password cannot be empty.",
+      "string.min": "Password should have at least 12 characters.",
+      "string.max": "Password should not exceed 50 characters.",
+      "string.pattern.base":
+        "Password must include at least one uppercase letter, one lowercase letter, and one special character.",
+      "any.required": "Password is required.",
+    });
 };
 
 export const emailValidation = (isRequired: boolean = true) => {

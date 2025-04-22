@@ -3,7 +3,10 @@ import {
   SUCCESS,
   TryCatch,
   addMinutesToCurrentTime,
+  generateBase32Secret,
+  generateJwtToken,
   generateOTP,
+  generateRandomString,
   getFiles,
 } from "../utils/helper";
 import ErrorHandler from "../utils/ErrorHandler";
@@ -16,6 +19,9 @@ import {
   SendOTPRequest,
   VerifyOTPRequest,
 } from "../../types/API/User/types";
+import { userRole } from "../utils/enums";
+import OTPAuth from "otpauth";
+import QRCode from "qrcode";
 
 const registerUser = TryCatch(
   async (
@@ -55,7 +61,6 @@ const registerUser = TryCatch(
         firstName,
         lastName,
         username,
-        company,
         role,
         email,
         countryCode,
@@ -64,6 +69,7 @@ const registerUser = TryCatch(
         deviceToken,
         deviceType,
       });
+      if (company) user.company = company;
     }
 
     const otp = generateOTP();
@@ -173,13 +179,138 @@ const completeRegistration = TryCatch(
       industry,
       interestedIn,
       stripeCustomerId,
+      packageName,
     } = req.body;
 
     const user = await getUserById(userId);
 
+    if (user.role != role) return next(new ErrorHandler("Invalid role", 400));
+
     const images = getFiles(req, [
-      "licenseImage,profileImage,additionalPhotos",
+      "licenseImage",
+      "profileImage",
+      "additionalPhotos",
     ]);
+
+    user.profileImage = images.profileImage[0];
+    user.licenseImage = images.licenseImage[0];
+    user.packageName = packageName;
+
+    if (role == userRole.GENERAL_MEMBER) {
+      user.age = age;
+      user.gender = gender;
+      user.martialStatus = martialStatus;
+      user.children = children;
+      user.homeOwnerShip = homeOwnerShip;
+      user.objective = objective;
+      user.financialExperience = financialExperience;
+      user.investments = investments;
+      user.servicesInterested = servicesInterested;
+    }
+
+    if (role == userRole.FINANCIAL_ADVISOR || role == userRole.FINANCIAL_FIRM) {
+      user.additionalPhotos = images.additionalPhotos[0];
+      user.crdNumber = crdNumber;
+      user.productsOffered = productsOffered;
+      user.areaOfExpertise = areaOfExpertise;
+    }
+
+    if (role == userRole.STARTUP || role == userRole.SMALL_BUSINESS) {
+      user.additionalPhotos = images.additionalPhotos[0];
+      user.industry = industry;
+      user.interestedIn = interestedIn;
+    }
+
+    if (role == userRole.INVESTOR) {
+      user.additionalPhotos = images.additionalPhotos[0];
+      user.industry = industry;
+      user.areaOfExpertise = areaOfExpertise;
+    }
+
+    if (stripeCustomerId) user.stripeCustomerId = stripeCustomerId;
+
+    user.isRegistrationCompleted = true;
+    const jti = generateRandomString(20);
+    const token = generateJwtToken({ userId: user._id, jti });
+
+    user.jti = jti;
+
+    await user.save();
+
+    return SUCCESS(res, 200, "User registration completed successfully", {
+      data: {
+        token,
+      },
+    });
+  }
+);
+
+const enable2FA = TryCatch(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const { user } = req;
+    const base32_secret = generateBase32Secret();
+
+    user.secret = base32_secret;
+    await user.save();
+
+    const totp = new OTPAuth.TOTP({
+      issuer: "ACME",
+      label: "Alice",
+      algorithm: "SHA1",
+      digits: 6,
+      secret: base32_secret,
+    });
+
+    let otpauth_url = totp.toString();
+
+    QRCode.toDataURL(otpauth_url, (err: any, imageUrl: any) => {
+      if (err) {
+        return res.status(500).json({
+          status: "fail",
+          message: "Error while generating QR Code",
+        });
+      }
+
+      SUCCESS(res, 200, "QR generated successfully", {
+        data: {
+          qrCodeUrl: imageUrl,
+          secret: base32_secret,
+        },
+      });
+    });
+  }
+);
+
+const verify2FA = TryCatch(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const { user } = req;
+    const { otp } = req.query;
+
+    const totp = new OTPAuth.TOTP({
+      issuer: "Young App",
+      label: user._id.toString(),
+      algorithm: "SHA1",
+      digits: 6,
+      secret: user.secret,
+    });
+
+    const isValidated = totp.validate({ token: otp.toString() });
+
+    if (!isValidated)
+      return next(new ErrorHandler("User authentication failed", 400));
+
+    const jti = generateRandomString(20);
+    const token = generateJwtToken({ userId: user._id, jti });
+
+    user.jti = jti;
+
+    await user.save();
+
+    return SUCCESS(res, 200, "User authenticated successfully", {
+      data: {
+        token,
+      },
+    });
   }
 );
 
@@ -193,5 +324,11 @@ const forgotPassword = TryCatch(
 
 export default {
   registerUser,
+  verifyOtp,
+  sendOtp,
+  completeRegistration,
+  loginUser,
   forgotPassword,
+  enable2FA,
+  verify2FA,
 };

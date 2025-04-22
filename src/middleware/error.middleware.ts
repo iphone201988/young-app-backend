@@ -30,6 +30,6 @@ export const errorMiddleware = async (
 
   res.status(error.statusCode).json({
     success: false,
-    message: error.statusCode,
+    message: error.message,
   });
 };

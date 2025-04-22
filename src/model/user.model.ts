@@ -1,6 +1,6 @@
 import { Schema, model } from "mongoose";
 import bcrypt from "bcrypt";
-import { deviceType, userRole } from "../utils/enums";
+import { accountPackage, deviceType, userRole } from "../utils/enums";
 import { UserModel } from "../../types/Database/types";
 
 const userSchema = new Schema<UserModel>(
@@ -12,7 +12,7 @@ const userSchema = new Schema<UserModel>(
     email: { type: String, unique: true, require: true },
     countryCode: { type: String, require: true },
     phone: { type: String, unique: true, require: true },
-    password: { type: String, require: true },
+    password: { type: String, require: true, select: false },
     role: { type: String, enum: [...Object.values(userRole)] },
     licenseImage: { type: String, require: true },
     crdNumber: { type: String },
@@ -41,6 +41,8 @@ const userSchema = new Schema<UserModel>(
     isRegistrationCompleted: { type: Boolean },
     isDeleted: { type: Boolean, default: false },
     stripeCustomerId: { type: String },
+    packageName: { type: String, enum: Object.values(accountPackage) },
+    secret:{type:String},
     unVerifiedTempCredentials: {
       email: { type: String },
     },

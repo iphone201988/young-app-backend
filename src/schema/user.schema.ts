@@ -3,11 +3,12 @@ import {
   ObjectIdValidation,
   emailValidation,
   numberValidation,
+  passwordValidation,
   specificNumberValidation,
   specificStringValidation,
   stringValidation,
 } from ".";
-import { deviceType, userRole } from "../utils/enums";
+import { accountPackage, deviceType, userRole } from "../utils/enums";
 
 const registerSchema = {
   body: Joi.object({
@@ -23,6 +24,14 @@ const registerSchema = {
     deviceToken: stringValidation("Device Token"),
     deviceType: specificNumberValidation("Device Type", deviceType),
   }),
+};
+
+const loginUserSchema = {
+  body: Joi.object({
+    username: stringValidation("Username", false),
+    email: emailValidation(false),
+    password: passwordValidation(),
+  }).xor("username", "email"),
 };
 
 const verifyOTPSchema = {
@@ -41,27 +50,31 @@ const sendOTPSchema = {
 };
 
 const completeRegistrationSchema = {
-  userId: ObjectIdValidation("User Id"),
-  role: specificStringValidation("Role", userRole),
-  crdNumber: stringValidation("CRD Number", false),
-  age: stringValidation("Age", false),
-  gender: stringValidation("Gender", false),
-  martialStatus: stringValidation("Martial Status", false),
-  children: stringValidation("Children", false),
-  homeOwnerShip: stringValidation("Home Ownership", false),
-  objective: stringValidation("Objective", false),
-  financialExperience: stringValidation("Financial Experience", false),
-  investments: stringValidation("Investments", false),
-  servicesInterested: stringValidation("Services Interested", false),
-  productsOffered: stringValidation("Products Offered", false),
-  areaOfExpertise: stringValidation("Area of Expertise", false),
-  industry: stringValidation("Industry", false),
-  interestedIn: stringValidation("Interested IN", false),
-  stripeCustomerId: stringValidation("Stripe Customer ID", false),
+  body: Joi.object({
+    userId: ObjectIdValidation("User Id"),
+    role: specificStringValidation("Role", userRole),
+    crdNumber: stringValidation("CRD Number", false),
+    age: stringValidation("Age", false),
+    gender: stringValidation("Gender", false),
+    martialStatus: stringValidation("Martial Status", false),
+    children: stringValidation("Children", false),
+    homeOwnerShip: stringValidation("Home Ownership", false),
+    objective: stringValidation("Objective", false),
+    financialExperience: stringValidation("Financial Experience", false),
+    investments: stringValidation("Investments", false),
+    servicesInterested: stringValidation("Services Interested", false),
+    productsOffered: stringValidation("Products Offered", false),
+    areaOfExpertise: stringValidation("Area of Expertise", false),
+    industry: stringValidation("Industry", false),
+    interestedIn: stringValidation("Interested IN", false),
+    stripeCustomerId: stringValidation("Stripe Customer ID", false),
+    packageName: specificStringValidation("Package", accountPackage),
+  }),
 };
 
 export default {
   registerSchema,
+  loginUserSchema,
   verifyOTPSchema,
   sendOTPSchema,
   completeRegistrationSchema,

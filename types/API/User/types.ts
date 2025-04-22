@@ -41,4 +41,5 @@ export type CompleteRegistrationRequest = {
   industry: string;
   interestedIn: string;
   stripeCustomerId: string;
+  packageName: string;
 };

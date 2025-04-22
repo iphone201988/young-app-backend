@@ -11,3 +11,8 @@ export const userRole = {
   STARTUP: "startup",
   INVESTOR: "investor",
 };
+
+export const accountPackage = {
+  STANDARD: "standard",
+  PREMIUM: "premium",
+};
