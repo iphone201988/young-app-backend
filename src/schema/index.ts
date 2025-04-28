@@ -22,6 +22,27 @@ export const stringValidation = (key: string, isRequired: boolean = true) => {
   return schema;
 };
 
+export const booleanValidation = (key: string, isRequired: boolean = true) => {
+  let schema: any;
+
+  if (isRequired) {
+    schema = Joi.boolean()
+      .required()
+      .messages({
+        "boolean.base": `${key} must be a boolean value.`,
+        "any.required": `${key} is required.`,
+      });
+  } else {
+    schema = Joi.boolean()
+      .optional()
+      .messages({
+        "boolean.base": `${key} must be a boolean value.`,
+      });
+  }
+
+  return schema;
+};
+
 export const numberValidation = (
   key: string,
   isRequired: boolean = true,

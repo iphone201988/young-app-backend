@@ -16,3 +16,14 @@ export const accountPackage = {
   STANDARD: "standard",
   PREMIUM: "premium",
 };
+
+export const postSymbol = {
+  STOCK: "stock",
+  CRYPTO: "crypto",
+};
+
+export const postType = {
+  SHARE: "share",
+  STREAM: "stream",
+  VAULT: "vault",
+};

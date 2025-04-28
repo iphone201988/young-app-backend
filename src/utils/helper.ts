@@ -12,7 +12,7 @@ export const TryCatch =
     Promise.resolve(func(req, res, next)).catch();
 
 export const generateJwtToken = (payload: any) => {
-  return jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: "1d" });
+  return jwt.sign(payload, process.env.JWT_SECRET);
 };
 
 export const generateRandomString = (length: number): string => {
@@ -43,7 +43,7 @@ export const getFiles = (req: Request, fileNames: Array<string>) => {
   fileNames.forEach((fileKey: string) => {
     if (req.files && req.files[fileKey]) {
       files[fileKey] = req.files[fileKey].map(
-        (file: any) => process.env.BACKEND_URL + "/uploads/" + file.filename
+        (file: any) => "/uploads/" + file.filename
       );
     }
   });

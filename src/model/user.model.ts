@@ -3,6 +3,56 @@ import bcrypt from "bcrypt";
 import { accountPackage, deviceType, userRole } from "../utils/enums";
 import { UserModel } from "../../types/Database/types";
 
+const otherCommonFields = {
+  formUpload: [{ type: String }],
+  website: { type: String },
+  city: { type: String },
+  state: { type: String },
+  race: { type: String },
+  about: { type: String },
+  businessRevenue: { type: String },
+  industriesSeeking: { type: String },
+  seeking: { type: String },
+  occupation: { type: String },
+  fairnessForward: { type: Boolean, default: false },
+  investors: { type: Boolean, default: false },
+  launchDate: { type: Date },
+};
+
+const startupOtherFields = {
+  stageOfBusiness: { type: String },
+  fundsRaised: { type: String },
+  fundsRaising: { type: String },
+};
+
+const financialAdvisorOtherFields = {
+  certificates: { type: String },
+  servicesProvided: { type: String },
+  yearsInFinancialIndustry: { type: String },
+};
+
+const memberOtherFields = {
+  educationLevel: { type: String },
+  residenceStatus: { type: String },
+  yearsEmployed: { type: String },
+  salaryRange: { type: String },
+  riskTolerance: { type: String },
+  topicsOfInterest: { type: String },
+  goals: { type: String },
+  stockInvestments: { type: String },
+  specificStockSymbols: { type: String },
+  cryptoInvestments: { type: String },
+  specificCryptoSymbols: { type: String },
+  otherSecurityInvestments: { type: String },
+  realEstate: { type: String },
+  retirementAccount: { type: String },
+  savings: { type: String },
+  startups: { type: String },
+  investmentAccounts: { type: Boolean, default: false },
+  retirement: { type: Boolean, default: false },
+  investmentRealEstate: { type: Boolean, default: false },
+};
+
 const userSchema = new Schema<UserModel>(
   {
     firstName: { type: String, require: true },
@@ -12,15 +62,16 @@ const userSchema = new Schema<UserModel>(
     email: { type: String, unique: true, require: true },
     countryCode: { type: String, require: true },
     phone: { type: String, unique: true, require: true },
-    password: { type: String, require: true, select: false },
-    role: { type: String, enum: [...Object.values(userRole)] },
+    password: { type: String, require: true },
+    role: { type: String, enum: Object.values(userRole) },
     licenseImage: { type: String, require: true },
+    lastLogin: { type: Date },
     crdNumber: { type: String },
     profileImage: { type: String, require: true },
     additionalPhotos: [{ type: String }],
     age: { type: String },
     gender: { type: String },
-    martialStatus: { type: String },
+    maritalStatus: { type: String },
     children: { type: String },
     homeOwnerShip: { type: String },
     objective: { type: String },
@@ -40,12 +91,21 @@ const userSchema = new Schema<UserModel>(
     isVerified: { type: Boolean },
     isRegistrationCompleted: { type: Boolean },
     isDeleted: { type: Boolean, default: false },
+    isDeactivated: { type: Boolean, default: false },
     stripeCustomerId: { type: String },
     packageName: { type: String, enum: Object.values(accountPackage) },
-    secret:{type:String},
+    secret: { type: String },
+    is2FAEnabled: { type: Boolean, default: false },
     unVerifiedTempCredentials: {
       email: { type: String },
     },
+    following: [{ type: Schema.Types.ObjectId, ref: "user" }],
+    followedBy: [{ type: Schema.Types.ObjectId, ref: "user" }],
+    customers: [{ type: Schema.Types.ObjectId, ref: "user" }],
+    ...otherCommonFields,
+    ...startupOtherFields,
+    ...financialAdvisorOtherFields,
+    ...memberOtherFields,
   },
   { timestamps: true }
 );

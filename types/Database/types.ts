@@ -11,12 +11,13 @@ export interface UserModel extends Document {
   password: string;
   role: string;
   licenseImage: string;
+  lastLogin: Date;
   crdNumber: string;
   profileImage: string;
   additionalPhotos: string[];
   age: string;
   gender: string;
-  martialStatus: string;
+  maritalStatus: string;
   children: string;
   homeOwnerShip: string;
   objective: string;
@@ -36,12 +37,66 @@ export interface UserModel extends Document {
   isVerified: boolean;
   isRegistrationCompleted: boolean;
   isDeleted: boolean;
+  isDeactivated: boolean;
   stripeCustomerId: string;
   packageName: string;
   secret: string;
+  is2FAEnabled: boolean;
   unVerifiedTempCredentials: {
     email: string;
   };
+
+  // otherCommonFields
+
+  formUpload: Array<string>;
+  website: string;
+  city: string;
+  state: string;
+  race: string;
+  about: string;
+  businessRevenue: string;
+  industriesSeeking: string;
+  seeking: string;
+  occupation: string;
+  fairnessForward: boolean;
+  investors: boolean;
+  launchDate: Date;
+
+  // startupOtherFields
+  stageOfBusiness: string;
+  fundsRaised: string;
+  fundsRaising: string;
+
+  // financialAdvisorOtherFields
+  certificates: string;
+  servicesProvided: string;
+  yearsInFinancialIndustry: string;
+
+  // memberFields
+  educationLevel: string;
+  residenceStatus: string;
+  yearsEmployed: string;
+  salaryRange: string;
+  riskTolerance: string;
+  topicsOfInterest: string;
+  goals: string;
+  stockInvestments: string;
+  specificStockSymbols: string;
+  cryptoInvestments: string;
+  specificCryptoSymbols: string;
+  otherSecurityInvestments: string;
+  realEstate: string;
+  retirementAccount: string;
+  savings: string;
+  startups: string;
+  investmentAccounts: boolean;
+  retirement: boolean;
+  investmentRealEstate: boolean;
+
+  following: any[];
+  followedBy: any[];
+  customers: any[];
+
   createdAt: Date;
   updatedAt: Date;
 

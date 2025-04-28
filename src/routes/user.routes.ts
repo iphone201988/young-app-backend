@@ -15,8 +15,7 @@ userRoutes.post(
 );
 
 userRoutes.post(
-  "/loginUser",
-  authenticationMiddleware,
+  "/login",
   validate(userSchema.loginUserSchema),
   userController.loginUser
 );
@@ -54,16 +53,50 @@ userRoutes.put(
   userController.completeRegistration
 );
 
-userRoutes.post(
-  "/enable2FA",
-  authenticationMiddleware,
-  userController.enable2FA
-);
-
-userRoutes.post(
+userRoutes.put(
   "/verify2FA",
-  authenticationMiddleware,
+  validate(userSchema.verify2FASchema),
   userController.verify2FA
 );
+
+userRoutes.put(
+  "/changePassword",
+  validate(userSchema.changePasswordSchema),
+  userController.changePassword
+);
+
+userRoutes.put(
+  "/followUnfollowUser/:userId",
+  authenticationMiddleware,
+  validate(userSchema.followUnfollowUserSchema),
+  userController.followUnfollowUser
+);
+
+userRoutes.put(
+  "/updateUser",
+  authenticationMiddleware,
+  upload.fields([
+    {
+      name: "licenseImage",
+      maxCount: 1,
+    },
+    {
+      name: "profileImage",
+      maxCount: 1,
+    },
+    {
+      name: "additionalPhotos",
+      maxCount: 5,
+    },
+    {
+      name: "formUpload",
+      maxCount: 2,
+    },
+  ]),
+  validate(userSchema.updateUserSchema),
+  userController.updateUser
+);
+
+userRoutes.get("/logout", userController.logout);
 
 export default userRoutes;

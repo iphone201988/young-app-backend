@@ -3,7 +3,6 @@ import {
   SUCCESS,
   TryCatch,
   addMinutesToCurrentTime,
-  generateBase32Secret,
   generateJwtToken,
   generateOTP,
   generateRandomString,
@@ -12,16 +11,26 @@ import {
 import ErrorHandler from "../utils/ErrorHandler";
 import User from "../model/user.model";
 import { sendEmail } from "../utils/sendEmail";
-import { getUserById } from "../services/user.services";
 import {
+  enable2FA,
+  getUserByEmail,
+  getUserById,
+  getUserByUsername,
+} from "../services/user.services";
+import {
+  ChangePasswordType,
   CompleteRegistrationRequest,
+  FollowUnfollowRequest,
+  LoginUserRequest,
   RegisterUserRequest,
   SendOTPRequest,
+  UpdateUserRequest,
+  Verify2FARequest,
   VerifyOTPRequest,
 } from "../../types/API/User/types";
 import { userRole } from "../utils/enums";
 import OTPAuth from "otpauth";
-import QRCode from "qrcode";
+import { UserModel } from "../../types/Database/types";
 
 const registerUser = TryCatch(
   async (
@@ -44,6 +53,7 @@ const registerUser = TryCatch(
     } = req.body;
 
     email = email.toLowerCase();
+    username = username.toLowerCase();
 
     let user = await User.findOne({
       email,
@@ -150,7 +160,12 @@ const sendOtp = TryCatch(
     return SUCCESS(
       res,
       200,
-      `OTP ${type == 2 ? "resent" : "sent"} successfully`
+      `OTP ${type == 2 ? "resent" : "sent"} successfully`,
+      {
+        data: {
+          userId: user._id,
+        },
+      }
     );
   }
 );
@@ -167,7 +182,7 @@ const completeRegistration = TryCatch(
       crdNumber,
       age,
       gender,
-      martialStatus,
+      maritalStatus,
       children,
       homeOwnerShip,
       objective,
@@ -199,7 +214,7 @@ const completeRegistration = TryCatch(
     if (role == userRole.GENERAL_MEMBER) {
       user.age = age;
       user.gender = gender;
-      user.martialStatus = martialStatus;
+      user.maritalStatus = maritalStatus;
       user.children = children;
       user.homeOwnerShip = homeOwnerShip;
       user.objective = objective;
@@ -230,80 +245,47 @@ const completeRegistration = TryCatch(
     if (stripeCustomerId) user.stripeCustomerId = stripeCustomerId;
 
     user.isRegistrationCompleted = true;
-    const jti = generateRandomString(20);
-    const token = generateJwtToken({ userId: user._id, jti });
-
-    user.jti = jti;
-
     await user.save();
+
+    const data = await enable2FA(user);
 
     return SUCCESS(res, 200, "User registration completed successfully", {
       data: {
-        token,
+        ...data,
+        userId: user._id,
       },
     });
   }
 );
 
-const enable2FA = TryCatch(
-  async (req: Request, res: Response, next: NextFunction) => {
-    const { user } = req;
-    const base32_secret = generateBase32Secret();
-
-    user.secret = base32_secret;
-    await user.save();
-
-    const totp = new OTPAuth.TOTP({
-      issuer: "ACME",
-      label: "Alice",
-      algorithm: "SHA1",
-      digits: 6,
-      secret: base32_secret,
-    });
-
-    let otpauth_url = totp.toString();
-
-    QRCode.toDataURL(otpauth_url, (err: any, imageUrl: any) => {
-      if (err) {
-        return res.status(500).json({
-          status: "fail",
-          message: "Error while generating QR Code",
-        });
-      }
-
-      SUCCESS(res, 200, "QR generated successfully", {
-        data: {
-          qrCodeUrl: imageUrl,
-          secret: base32_secret,
-        },
-      });
-    });
-  }
-);
-
 const verify2FA = TryCatch(
-  async (req: Request, res: Response, next: NextFunction) => {
-    const { user } = req;
-    const { otp } = req.query;
+  async (
+    req: Request<{}, {}, Verify2FARequest>,
+    res: Response,
+    next: NextFunction
+  ) => {
+    const { userId, otp } = req.body;
+
+    const user = await getUserById(userId);
 
     const totp = new OTPAuth.TOTP({
-      issuer: "Young App",
-      label: user._id.toString(),
+      issuer: process.env.TOTP_ISSUER,
+      label: process.env.TOTP_LABEL,
       algorithm: "SHA1",
       digits: 6,
       secret: user.secret,
     });
 
-    const isValidated = totp.validate({ token: otp.toString() });
+    const isValidated = totp.validate({ token: otp.toString(), window: 1 });
 
-    if (!isValidated)
+    if (isValidated == null)
       return next(new ErrorHandler("User authentication failed", 400));
 
     const jti = generateRandomString(20);
     const token = generateJwtToken({ userId: user._id, jti });
 
     user.jti = jti;
-
+    if (!user.is2FAEnabled) user.is2FAEnabled = true;
     await user.save();
 
     return SUCCESS(res, 200, "User authenticated successfully", {
@@ -315,11 +297,303 @@ const verify2FA = TryCatch(
 );
 
 const loginUser = TryCatch(
-  async (req: Request, res: Response, next: NextFunction) => {}
+  async (
+    req: Request<{}, {}, LoginUserRequest>,
+    res: Response,
+    next: NextFunction
+  ) => {
+    let { username, email, password, deviceType, deviceToken } = req.body;
+
+    let user: UserModel | null;
+    if (email) {
+      email = email.toLowerCase();
+      user = await getUserByEmail(email);
+    }
+    if (username) user = await getUserByUsername(username);
+
+    if (!user) return next(new ErrorHandler("Invalid credentials", 400));
+
+    const isMatched = await user.matchPassword(password);
+    if (!isMatched) return next(new ErrorHandler("Invalid credentials", 400));
+
+    user.deviceType = deviceType;
+    user.deviceToken = deviceToken;
+    user.lastLogin = new Date();
+    await user.save();
+
+    let data: any = {};
+    if (!user.is2FAEnabled) data = await enable2FA(user);
+
+    return SUCCESS(res, 200, "Please enter the authentication code", {
+      data: { ...data, userId: user._id },
+    });
+  }
 );
 
-const forgotPassword = TryCatch(
-  async (req: Request, res: Response, next: NextFunction) => {}
+const changePassword = TryCatch(
+  async (
+    req: Request<{}, {}, ChangePasswordType>,
+    res: Response,
+    next: NextFunction
+  ) => {
+    const { userId, password } = req.body;
+    const user = await getUserById(userId);
+    if (!user.otpVerified)
+      return next(new ErrorHandler("Please verify OTP first", 400));
+    user.password = password;
+    user.otpVerified = false;
+    await user.save();
+    return SUCCESS(res, 200, "Password has been changed successfully");
+  }
+);
+
+const followUnfollowUser = TryCatch(
+  async (
+    req: Request<FollowUnfollowRequest>,
+    res: Response,
+    next: NextFunction
+  ) => {
+    const { user } = req;
+    const { userId } = req.params;
+    const userToFollow = await getUserById(userId);
+    const isFollowing = userToFollow.followedBy.includes(userToFollow._id);
+
+    if (isFollowing) {
+      userToFollow.followedBy = userToFollow.followedBy.filter(
+        (id: string) => id != user._id
+      );
+
+      user.following = user.following.filter(
+        (id: string) => id != userToFollow._id
+      );
+    } else {
+      user.following.push(userToFollow._id);
+      userToFollow.followedBy.push(user._id);
+    }
+
+    await Promise.all([user.save(), userToFollow.save()]);
+
+    return SUCCESS(
+      res,
+      200,
+      `User ${isFollowing ? "unfollowed" : "followed"} successfully`
+    );
+  }
+);
+
+const updateUser = TryCatch(
+  async (
+    req: Request<{}, {}, UpdateUserRequest>,
+    res: Response,
+    next: NextFunction
+  ) => {
+    const { user } = req;
+
+    const {
+      firstName,
+      lastName,
+      company,
+      website,
+      city,
+      state,
+      race,
+      gender,
+      ageRange,
+      yearFounded,
+      about,
+      fairnessForward,
+      productsOffered,
+      areaOfExpertise,
+      businessRevenue,
+      investors,
+
+      industriesSeeking,
+
+      launchDate,
+      seeking,
+
+      stageOfBusiness,
+      fundsRaised,
+      fundsRaising,
+      industry,
+
+      educationLevel,
+      crdNumber,
+      certificates,
+      servicesProvided,
+      yearsInFinancialIndustry,
+      occupation,
+
+      maritalStatus,
+      children,
+      financialExperience,
+      residenceStatus,
+      yearsEmployed,
+      salaryRange,
+      riskTolerance,
+      topicsOfInterest,
+      goals,
+      stockInvestments,
+      specificStockSymbols,
+      cryptoInvestments,
+      specificCryptoSymbols,
+      otherSecurityInvestments,
+      realEstate,
+      retirementAccount,
+      savings,
+      startups,
+      investmentAccounts,
+      retirement,
+      investmentRealEstate,
+
+      additionalPhotosToBeRemoved = [],
+      formUploadToBeRemoved = [],
+    } = req.body;
+
+    const files = getFiles(req, [
+      "profileImage",
+      "licenseImage",
+      "additionalPhotos",
+      "formUpload",
+    ]);
+
+    if (files.profileImage?.length) user.profileImage = files.profileImage[0];
+    if (files.licenseImage?.length) user.licenseImage = files.licenseImage[0];
+    if (files.additionalPhotos?.length) {
+      additionalPhotosToBeRemoved.forEach((photo: string) => {
+        const index = user.additionalPhotos.indexOf(photo);
+        if (index > -1) {
+          user.additionalPhotos.splice(index, 1);
+        }
+      });
+
+      if (user.additionalPhotos.length + files.additionalPhotos.length > 5) {
+        return next(new ErrorHandler("Additional Photos limit exceed", 400));
+      }
+
+      files.additionalPhotos.forEach((photo: string) => {
+        user.additionalPhotos.push(photo);
+      });
+    }
+    if (files.formUpload?.length) {
+      formUploadToBeRemoved.forEach((photo: string) => {
+        const index = user.formUpload.indexOf(photo);
+        if (index > -1) {
+          user.formUpload.splice(index, 1);
+        }
+      });
+
+      if (user.formUpload.length + files.formUpload.length > 2) {
+        return next(new ErrorHandler("Form Upload limit exceed", 400));
+      }
+
+      files.formUpload.forEach((photo: string) => {
+        user.formUpload.push(photo);
+      });
+    }
+
+    if (firstName) user.firstName = firstName;
+    if (lastName) user.lastName = lastName;
+    if (company) user.company = company;
+    if (website) user.website = website;
+    if (city) user.city = city;
+    if (state) user.state = state;
+    if (race) user.race = race;
+    if (gender) user.gender = gender;
+    if (ageRange) user.ageRange = ageRange;
+    if (yearFounded) user.yearFounded = yearFounded;
+    if (about) user.about = about;
+    if (fairnessForward) user.fairnessForward = fairnessForward;
+
+    if (user.role == userRole.FINANCIAL_FIRM) {
+      if (productsOffered) user.productsOffered = productsOffered;
+      if (areaOfExpertise) user.areaOfExpertise = areaOfExpertise;
+      if (businessRevenue) user.businessRevenue = businessRevenue;
+      if (investors) user.investors = investors;
+    }
+
+    if (user.role == userRole.INVESTOR) {
+      if (yearFounded) user.yearFounded = yearFounded;
+      if (industriesSeeking) user.industriesSeeking = industriesSeeking;
+      if (businessRevenue) user.businessRevenue = businessRevenue;
+      if (investors) user.investors = investors;
+    }
+
+    if (user.role == userRole.SMALL_BUSINESS) {
+      if (industry) user.industry = industry;
+      if (launchDate) user.launchDate = launchDate;
+      if (seeking) user.seeking = seeking;
+    }
+
+    if (user.role == userRole.STARTUP) {
+      if (industry) user.industry = industry;
+      if (launchDate) user.launchDate = launchDate;
+      if (seeking) user.seeking = seeking;
+      if (stageOfBusiness) user.stageOfBusiness = stageOfBusiness;
+      if (fundsRaised) user.fundsRaised = fundsRaised;
+      if (fundsRaising) user.fundsRaising = fundsRaising;
+    }
+
+    if (user.role == userRole.FINANCIAL_ADVISOR) {
+      if (ageRange) user.ageRange = ageRange;
+      if (educationLevel) user.educationLevel = educationLevel;
+      if (crdNumber) user.crdNumber = crdNumber;
+      if (certificates) user.certificates = certificates;
+      if (servicesProvided) user.servicesProvided = servicesProvided;
+      if (yearsInFinancialIndustry)
+        user.yearsInFinancialIndustry = yearsInFinancialIndustry;
+      if (occupation) user.occupation = occupation;
+    }
+
+    if (user.role == userRole.GENERAL_MEMBER) {
+      if (maritalStatus) user.maritalStatus = maritalStatus;
+      if (children) user.children = children;
+      if (financialExperience) user.financialExperience = financialExperience;
+      if (residenceStatus) user.residenceStatus = residenceStatus;
+      if (yearsEmployed) user.yearsEmployed = yearsEmployed;
+      if (salaryRange) user.salaryRange = salaryRange;
+      if (riskTolerance) user.riskTolerance = riskTolerance;
+      if (topicsOfInterest) user.topicsOfInterest = topicsOfInterest;
+      if (goals) user.goals = goals;
+      if (stockInvestments) user.stockInvestments = stockInvestments;
+      if (specificStockSymbols)
+        user.specificStockSymbols = specificStockSymbols;
+      if (cryptoInvestments) user.cryptoInvestments = cryptoInvestments;
+      if (specificCryptoSymbols)
+        user.specificCryptoSymbols = specificCryptoSymbols;
+      if (otherSecurityInvestments)
+        user.otherSecurityInvestments = otherSecurityInvestments;
+      if (realEstate) user.realEstate = realEstate;
+      if (retirementAccount) user.retirementAccount = retirementAccount;
+      if (savings) user.savings = savings;
+      if (startups) user.startups = startups;
+      if (investmentAccounts) user.investmentAccounts = investmentAccounts;
+      if (retirement) user.retirement = retirement;
+      if (investmentRealEstate)
+        user.investmentRealEstate = investmentRealEstate;
+    }
+
+    await user.save();
+    return SUCCESS(res, 200, "User updated successfully");
+  }
+);
+
+const deleteAccount = TryCatch(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const { user } = req;
+    user.isDeleted = true;
+    await user.save();
+    return SUCCESS(res, 200, "User deleted successfully");
+  }
+);
+
+const logout = TryCatch(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const { user } = req;
+    user.jti = undefined;
+    await user.save();
+    return SUCCESS(res, 200, "User loggedout successfully");
+  }
 );
 
 export default {
@@ -328,7 +602,10 @@ export default {
   sendOtp,
   completeRegistration,
   loginUser,
-  forgotPassword,
-  enable2FA,
+  changePassword,
   verify2FA,
+  followUnfollowUser,
+  updateUser,
+  deleteAccount,
+  logout,
 };
