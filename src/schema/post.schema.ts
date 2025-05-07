@@ -1,5 +1,6 @@
 import Joi, { number } from "joi";
 import {
+  ObjectIdValidation,
   numberValidation,
   specificStringValidation,
   stringValidation,
@@ -49,7 +50,22 @@ const getPostsSchema = {
   }),
 };
 
+const addCommentsSchema = {
+  body: Joi.object({
+    postId: ObjectIdValidation("Post ID"),
+    comment: stringValidation("Comment"),
+  }),
+};
+
+const commonSchema = {
+  params: Joi.object({
+    postId: ObjectIdValidation("Post ID"),
+  }),
+};
+
 export default {
   createPostSchema,
-  getPostsSchema
+  getPostsSchema,
+  addCommentsSchema,
+  commonSchema
 };

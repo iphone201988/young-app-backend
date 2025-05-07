@@ -22,4 +22,32 @@ postRoutes.get(
   postController.getPosts
 );
 
+postRoutes.post(
+  "/addComments",
+  authenticationMiddleware,
+  validate(postSchema.addCommentsSchema),
+  postController.addComments
+);
+
+postRoutes.get(
+  "/getAllComments/:postId",
+  authenticationMiddleware,
+  validate(postSchema.commonSchema),
+  postController.getAllComments
+);
+
+postRoutes.put(
+  "/saveUnsavePost/:postId",
+  authenticationMiddleware,
+  validate(postSchema.commonSchema),
+  postController.saveUnsavePost
+);
+
+postRoutes.put(
+  "/likeDislikePost/:postId",
+  authenticationMiddleware,
+  validate(postSchema.commonSchema),
+  postController.likeDislikePost
+);
+
 export default postRoutes;

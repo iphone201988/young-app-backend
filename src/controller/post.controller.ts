@@ -1,7 +1,17 @@
 import { NextFunction, Request, Response } from "express";
 import { SUCCESS, TryCatch, getFiles } from "../utils/helper";
 import Post from "../model/post.model";
-import { CreatePostRequest } from "../../types/API/Post/types";
+import {
+  AddCommentsRequest,
+  CreatePostRequest,
+  GetPostsRequest,
+  PostIdRequest,
+} from "../../types/API/Post/types";
+import { getPostById } from "../services/post.services";
+import Comments from "../model/comments.model";
+import mongoose from "mongoose";
+import User from "../model/user.model";
+import { postType } from "../utils/enums";
 
 const createPost = TryCatch(
   async (
@@ -29,31 +39,76 @@ const createPost = TryCatch(
 );
 
 const getPosts = TryCatch(
-  async (req: Request, res: Response, next: NextFunction) => {
-    const { userId } = req;
+  async (
+    req: Request<{}, {}, {}, GetPostsRequest>,
+    res: Response,
+    next: NextFunction
+  ) => {
+    const { user } = req;
     const { type, userType, sort, page = 1, limit = 10 } = req.query;
 
     const posts = await Post.aggregate([
       {
         $match: {
-          userId,
           type,
         },
       },
       {
         $lookup: {
           from: "users",
-          localField: "userId",
-          foreignField: "_id",
+          let: { userId: "$userId" },
+          pipeline: [
+            {
+              $match: {
+                $expr: { $eq: ["$_id", "$$userId"] },
+                role: userType,
+              },
+            },
+            {
+              $project: {
+                firstName: 1,
+                lastName: 1,
+                profileImage: 1,
+                _id: 1,
+              },
+            },
+          ],
           as: "user",
+        },
+      },
+      {
+        $lookup: {
+          from: "comments",
+          localField: "_id",
+          foreignField: "postId",
+          as: "comments",
+        },
+      },
+      {
+        $addFields: {
+          commentsCount: { $size: "$comments" },
+          isSaved: {
+            $cond: {
+              if: {
+                // $in: [new mongoose.Types.ObjectId(userId), "$savedByUsers"],
+                $in: ["$_id", user.savedPosts],
+              },
+              then: true,
+              else: false,
+            },
+          },
         },
       },
       {
         $unwind: "$user",
       },
       {
-        $match: {
-          "user.role": userType,
+        $project: {
+          __v: 0,
+          updatedAt: 0,
+          isPublished: 0,
+          isDeleted: 0,
+          comments: 0,
         },
       },
       {
@@ -65,7 +120,102 @@ const getPosts = TryCatch(
   }
 );
 
+const addComments = TryCatch(
+  async (
+    req: Request<{}, {}, AddCommentsRequest>,
+    res: Response,
+    next: NextFunction
+  ) => {
+    const { userId } = req;
+    const { postId, comment } = req.body;
+
+    const post = await getPostById(postId);
+
+    await Comments.create({
+      userId,
+      postId: post._id,
+      comment,
+      type: postType.SHARE,
+    });
+
+    return SUCCESS(res, 201, "Comment added successfully");
+  }
+);
+
+const getAllComments = TryCatch(
+  async (req: Request<PostIdRequest>, res: Response, next: NextFunction) => {
+    const { postId } = req.params;
+
+    const post = await getPostById(postId);
+
+    const comments = await Comments.find({ postId: post._id })
+      .populate("userId", "_id firstName lastName profileImage")
+      .select("-updatedAt -__v")
+      .sort({ createdAt: -1 });
+
+    return SUCCESS(res, 200, "Comments fetched successfully", {
+      data: { comments },
+    });
+  }
+);
+
+const saveUnsavePost = TryCatch(
+  async (req: Request<PostIdRequest>, res: Response, next: NextFunction) => {
+    const { userId, user } = req;
+    const { postId } = req.params;
+
+    await getPostById(postId);
+
+    const isSaved = user.savedPosts.includes(postId);
+    if (isSaved) {
+      await User.findByIdAndUpdate(userId, {
+        $pull: { savedPosts: postId },
+      });
+    } else {
+      await User.findByIdAndUpdate(userId, {
+        $push: { savedPosts: postId },
+      });
+    }
+
+    return SUCCESS(
+      res,
+      200,
+      `Post ${isSaved ? "unsaved" : "saved"} successfully`
+    );
+  }
+);
+
+const likeDislikePost = TryCatch(
+  async (req: Request<PostIdRequest>, res: Response, next: NextFunction) => {
+    const { userId } = req;
+    const { postId } = req.params;
+
+    const post = await getPostById(postId);
+
+    const isLiked = post.likedBy.includes(userId);
+    if (isLiked) {
+      await Post.findByIdAndUpdate(postId, {
+        $pull: { likedBy: userId },
+      });
+    } else {
+      await Post.findByIdAndUpdate(postId, {
+        $push: { likedBy: userId },
+      });
+    }
+
+    return SUCCESS(
+      res,
+      200,
+      `Post ${isLiked ? "disliked" : "liked"} successfully`
+    );
+  }
+);
+
 export default {
   createPost,
   getPosts,
+  addComments,
+  getAllComments,
+  saveUnsavePost,
+  likeDislikePost,
 };

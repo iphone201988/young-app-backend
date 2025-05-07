@@ -41,7 +41,7 @@ const verifyOTPSchema = {
   body: Joi.object({
     userId: ObjectIdValidation("UserID"),
     otp: numberValidation("OTP"),
-    type: specificNumberValidation("Type", [1, 2]),
+    type: specificNumberValidation("Type", [1, 2, 3]),
   }),
 };
 
@@ -92,6 +92,12 @@ const changePasswordSchema = {
 const followUnfollowUserSchema = {
   params: Joi.object({
     userId: ObjectIdValidation("User Id"),
+  }),
+};
+
+const getUserProfileSchema = {
+  query: Joi.object({
+    userId: ObjectIdValidation("User Id", false),
   }),
 };
 
@@ -165,6 +171,20 @@ const updateUserSchema = {
   }),
 };
 
+const updateCustomersSchema = {
+  params: Joi.object({
+    userId: ObjectIdValidation("User Id"),
+  }),
+};
+
+const getUsersSchema = {
+  query: Joi.object({
+    page: numberValidation("Page", false),
+    limit: numberValidation("Limit", false),
+    category: stringValidation("Category", false),
+  }),
+};
+
 export default {
   registerSchema,
   loginUserSchema,
@@ -175,4 +195,7 @@ export default {
   changePasswordSchema,
   updateUserSchema,
   followUnfollowUserSchema,
+  getUserProfileSchema,
+  updateCustomersSchema,
+  getUsersSchema,
 };

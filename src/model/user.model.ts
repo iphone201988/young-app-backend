@@ -14,8 +14,8 @@ const otherCommonFields = {
   industriesSeeking: { type: String },
   seeking: { type: String },
   occupation: { type: String },
-  fairnessForward: { type: Boolean, default: false },
-  investors: { type: Boolean, default: false },
+  fairnessForward: { type: Boolean },
+  investors: { type: Boolean },
   launchDate: { type: Date },
 };
 
@@ -48,26 +48,26 @@ const memberOtherFields = {
   retirementAccount: { type: String },
   savings: { type: String },
   startups: { type: String },
-  investmentAccounts: { type: Boolean, default: false },
-  retirement: { type: Boolean, default: false },
-  investmentRealEstate: { type: Boolean, default: false },
+  investmentAccounts: { type: Boolean },
+  retirement: { type: Boolean },
+  investmentRealEstate: { type: Boolean },
 };
 
 const userSchema = new Schema<UserModel>(
   {
-    firstName: { type: String, require: true },
-    lastName: { type: String, require: true },
-    username: { type: String, unique: true, require: true },
+    firstName: { type: String, required: true },
+    lastName: { type: String, required: true },
+    username: { type: String, unique: true, required: true },
     company: { type: String },
-    email: { type: String, unique: true, require: true },
-    countryCode: { type: String, require: true },
-    phone: { type: String, unique: true, require: true },
-    password: { type: String, require: true },
+    email: { type: String, unique: true, required: true },
+    countryCode: { type: String, required: true },
+    phone: { type: String, unique: true, required: true },
+    password: { type: String, required: true },
     role: { type: String, enum: Object.values(userRole) },
-    licenseImage: { type: String, require: true },
+    licenseImage: { type: String },
     lastLogin: { type: Date },
     crdNumber: { type: String },
-    profileImage: { type: String, require: true },
+    profileImage: { type: String },
     additionalPhotos: [{ type: String }],
     age: { type: String },
     gender: { type: String },
@@ -89,7 +89,7 @@ const userSchema = new Schema<UserModel>(
     otpExpiry: { type: Date },
     otpVerified: { type: Boolean },
     isVerified: { type: Boolean },
-    isRegistrationCompleted: { type: Boolean },
+    isRegistrationCompleted: { type: Boolean,default: false },
     isDeleted: { type: Boolean, default: false },
     isDeactivated: { type: Boolean, default: false },
     stripeCustomerId: { type: String },
@@ -106,6 +106,8 @@ const userSchema = new Schema<UserModel>(
     ...startupOtherFields,
     ...financialAdvisorOtherFields,
     ...memberOtherFields,
+
+    savedPosts: [{ type: Schema.Types.ObjectId, ref: "post" }],
   },
   { timestamps: true }
 );

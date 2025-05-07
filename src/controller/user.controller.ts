@@ -3,6 +3,7 @@ import {
   SUCCESS,
   TryCatch,
   addMinutesToCurrentTime,
+  filterUser,
   generateJwtToken,
   generateOTP,
   generateRandomString,
@@ -21,6 +22,7 @@ import {
   ChangePasswordType,
   CompleteRegistrationRequest,
   FollowUnfollowRequest,
+  GetUsersRequest,
   LoginUserRequest,
   RegisterUserRequest,
   SendOTPRequest,
@@ -103,7 +105,7 @@ const verifyOtp = TryCatch(
     res: Response,
     next: NextFunction
   ) => {
-    const { userId, otp, type } = req.body; // Verification:1,Forgot:2,ChangeEmail:3
+    const { userId, otp, type } = req.body; // Forgot:1,ChangeEmail:2,Verification:3
     const user = await getUserById(userId);
     const now = new Date();
 
@@ -118,9 +120,9 @@ const verifyOtp = TryCatch(
 
     user.otp = undefined;
     user.otpExpiry = undefined;
-    if (type == 1) user.isVerified = true;
+    if (type == 3) user.isVerified = true;
     user.otpVerified = true;
-    if (type == 3) {
+    if (type == 2) {
       user.email = user.unVerifiedTempCredentials.email;
       user.unVerifiedTempCredentials.email = undefined;
       user.isVerified = true;
@@ -316,6 +318,12 @@ const loginUser = TryCatch(
     const isMatched = await user.matchPassword(password);
     if (!isMatched) return next(new ErrorHandler("Invalid credentials", 400));
 
+    if (!user.isRegistrationCompleted) {
+      return SUCCESS(res, 200, "Please complete your registration first", {
+        data: { ...filterUser(user.toObject()) },
+      });
+    }
+
     user.deviceType = deviceType;
     user.deviceToken = deviceToken;
     user.lastLogin = new Date();
@@ -406,6 +414,7 @@ const updateUser = TryCatch(
       areaOfExpertise,
       businessRevenue,
       investors,
+      isCustomer,
 
       industriesSeeking,
 
@@ -578,6 +587,54 @@ const updateUser = TryCatch(
   }
 );
 
+const updateCustomers = TryCatch(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const { userId: loggedInUserId } = req;
+    const { userId } = req.params;
+
+    if (loggedInUserId == userId)
+      return next(new ErrorHandler("You can't add yourself as customer", 400));
+
+    const user = await getUserById(userId);
+
+    const isAlreadyCustomer = user.customers.includes(loggedInUserId);
+    if (isAlreadyCustomer) {
+      user.customers = user.customers.filter(
+        (id: string) => id != loggedInUserId
+      );
+    } else {
+      user.customers.push(loggedInUserId);
+    }
+
+    await user.save();
+
+    return SUCCESS(
+      res,
+      200,
+      `User ${isAlreadyCustomer ? "removed from" : "added to"} customers`
+    );
+  }
+);
+
+const getUserProfile = TryCatch(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const { user } = req;
+    const userId = req.query.userId || user._id;
+    const userProfile = await User.findById(userId);
+    if (!userProfile) return next(new ErrorHandler("User not found", 404));
+    return SUCCESS(res, 200, "User profile fetched successfully", {
+      data: {
+        user: {
+          ...filterUser(userProfile.toObject()),
+          customers: userProfile.customers.length,
+          followedBy: userProfile.followedBy.length,
+          following: userProfile.following.length,
+        },
+      },
+    });
+  }
+);
+
 const deleteAccount = TryCatch(
   async (req: Request, res: Response, next: NextFunction) => {
     const { user } = req;
@@ -596,6 +653,42 @@ const logout = TryCatch(
   }
 );
 
+const getUsers = TryCatch(
+  async (
+    req: Request<{}, {}, {}, GetUsersRequest>,
+    res: Response,
+    next: NextFunction
+  ) => {
+    const { userId } = req;
+    const { category = "all", page = 1, limit = 20 } = req.query;
+    const skip = (page - 1) * limit;
+
+    const query: any = { _id: { $ne: userId }, isDeleted: false };
+
+    if (category != "all") {
+      const roles = category.split(",");
+      query.role = { $in: roles };
+    }
+
+    const count = await User.countDocuments(query);
+    const users = await User.find(query)
+      .select("firstName lastName username profileImage role")
+      .skip(skip)
+      .limit(limit);
+
+    return SUCCESS(res, 200, "Users fetched successfully", {
+      data: {
+        users,
+      },
+      pagination: {
+        page: Number(page),
+        limit: Number(limit),
+        totalPages: Math.ceil(count / limit),
+      },
+    });
+  }
+);
+
 export default {
   registerUser,
   verifyOtp,
@@ -608,4 +701,7 @@ export default {
   updateUser,
   deleteAccount,
   logout,
+  getUserProfile,
+  updateCustomers,
+  getUsers,
 };

@@ -97,6 +97,27 @@ userRoutes.put(
   userController.updateUser
 );
 
-userRoutes.get("/logout", userController.logout);
+userRoutes.get("/logout", authenticationMiddleware, userController.logout);
+
+userRoutes.get(
+  "/getUserProfile",
+  authenticationMiddleware,
+  validate(userSchema.getUserProfileSchema),
+  userController.getUserProfile
+);
+
+userRoutes.put(
+  "/updateCustomers/:userId",
+  authenticationMiddleware,
+  validate(userSchema.updateCustomersSchema),
+  userController.updateCustomers
+);
+
+userRoutes.get(
+  "/getUsers",
+  authenticationMiddleware,
+  validate(userSchema.getUsersSchema),
+  userController.getUsers
+);
 
 export default userRoutes;

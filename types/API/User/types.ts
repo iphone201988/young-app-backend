@@ -64,7 +64,7 @@ export type ChangePasswordType = {
 
 export type FollowUnfollowRequest = {
   userId: string;
-}
+};
 
 export type UpdateUserRequest = {
   firstName: string;
@@ -83,6 +83,7 @@ export type UpdateUserRequest = {
   areaOfExpertise: string;
   businessRevenue: string;
   investors: boolean;
+  isCustomer: boolean;
 
   industriesSeeking: string;
   launchDate: string;
@@ -124,4 +125,10 @@ export type UpdateUserRequest = {
 
   additionalPhotosToBeRemoved: Array<string>;
   formUploadToBeRemoved: Array<string>;
+};
+
+export type GetUsersRequest = {
+  category?: string;
+  page?: number;
+  limit?: number;
 };

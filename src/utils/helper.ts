@@ -4,12 +4,13 @@ import jwt from "jsonwebtoken";
 import otpGenerator from "otp-generator";
 import { encode } from "hi-base32";
 import { randomBytes } from "crypto";
+import { UserModel } from "../../types/Database/types";
 
 export const connectToDB = () => mongoose.connect(process.env.MONGO_URI);
 
 export const TryCatch =
   (func: any) => (req: Request, res: Response, next: NextFunction) =>
-    Promise.resolve(func(req, res, next)).catch();
+    Promise.resolve(func(req, res, next)).catch(next);
 
 export const generateJwtToken = (payload: any) => {
   return jwt.sign(payload, process.env.JWT_SECRET);
@@ -56,6 +57,26 @@ export const generateBase32Secret = () => {
   const buffer = randomBytes(15);
   const base32 = encode(buffer).replace(/=/g, "").substring(0, 24);
   return base32;
+};
+
+export const filterUser = (user: UserModel) => {
+  return {
+    ...user,
+    password: undefined,
+    jti: undefined,
+    otp: undefined,
+    otpExpiry: undefined,
+    otpVerified: undefined,
+    isDeleted: undefined,
+    isDeactivated: undefined,
+    secret: undefined,
+    unVerifiedTempCredentials: undefined,
+    deviceToken: undefined,
+    deviceType: undefined,
+    __v: undefined,
+    createdAt: undefined,
+    updatedAt: undefined,
+  };
 };
 
 type ResponseData = Record<string, any>;

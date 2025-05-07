@@ -96,9 +96,52 @@ export interface UserModel extends Document {
   following: any[];
   followedBy: any[];
   customers: any[];
+  savedPosts: any[];
 
   createdAt: Date;
   updatedAt: Date;
 
   matchPassword(password: string): Promise<boolean>;
+}
+
+export interface PostModel extends Document {
+  userId: any;
+  title: string;
+  symbol: string;
+  topic: string;
+  description: string;
+  image: string;
+  type: string;
+  scheduleDate: Date;
+  isPublished: boolean;
+  isDeleted: boolean;
+  likedBy: any[];
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface CommentsModel extends Document {
+  postId: any;
+  userId: any;
+  vaultId: any;
+  comment: string;
+  type: string;
+
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface VaultModel extends Document {
+  admin: any;
+  members: any[];
+  title: string;
+  topic: string;
+  description: string;
+  image: string;
+  access: string;
+  category: string;
+  isDeleted: boolean;
+
+  createdAt: Date;
+  updatedAt: Date;
 }

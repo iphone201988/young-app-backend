@@ -27,3 +27,8 @@ export const postType = {
   STREAM: "stream",
   VAULT: "vault",
 };
+
+export const vaultAccess = {
+  PUBLIC: "public",
+  PRIVATE: "private",
+};

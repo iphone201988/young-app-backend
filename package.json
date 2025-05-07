@@ -1,14 +1,14 @@
 {
-  "name": "primerun-backend",
+  "name": "young-app",
   "version": "1.0.0",
-  "main": "index.js",
+  "main": "server.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "tsc --build",
     "watch": "tsc --watch",
-    "pre:dev": "nodemon dist/index.js",
+    "pre:dev": "nodemon dist/server.js",
     "dev": "concurrently \"npm run watch\" \"npm run pre:dev\"",
-    "start": "node dist/index.js"
+    "start": "node dist/server2.js"
   },
   "keywords": [],
   "author": "",

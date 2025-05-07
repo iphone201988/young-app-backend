@@ -1,4 +1,5 @@
 import Joi from "joi";
+import mongoose from "mongoose";
 
 export const stringValidation = (key: string, isRequired: boolean = true) => {
   let schema: any;
@@ -76,10 +77,18 @@ export const ObjectIdValidation = (key: string, isRequired: boolean = true) => {
     schema = Joi.string()
       .pattern(/^[0-9a-fA-F]{24}$/)
       .required()
+      .custom((value, helpers) => {
+        const id = value;
+        if (!mongoose.Types.ObjectId.isValid(id)) {
+          return helpers.error("any.invalid");
+        }
+        return value;
+      }, "ObjectId validation")
       .messages({
         "string.base": `${key} should be a type of text`,
         "string.empty": `${key} cannot be empty`,
         "string.pattern.base": `${key} must be a valid ObjectId`,
+        "any.invalid": `${key} must be a valid ObjectId`,
         "any.required": `${key} is required.`,
       });
   } else {
@@ -143,7 +152,7 @@ export const specificStringValidation = (
         "string.base": `${key} must be a string.`,
         "string.empty": `${key} cannot be empty.`,
         "any.required": `${key} is required`,
-        "any.only": `Gender must be one of: ${Object.values(type).join(", ")}.`,
+        "any.only": `${key} must be one of: ${Object.values(type).join(", ")}.`,
       });
   } else {
     schema = Joi.string()
@@ -152,7 +161,7 @@ export const specificStringValidation = (
       .messages({
         "string.base": `${key} must be a string.`,
         "string.empty": `${key} cannot be empty.`,
-        "any.only": `Gender must be one of: ${Object.values(type).join(", ")}.`,
+        "any.only": `${key} must be one of: ${Object.values(type).join(", ")}.`,
       });
   }
   return schema;
