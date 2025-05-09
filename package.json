@@ -8,7 +8,7 @@
     "watch": "tsc --watch",
     "pre:dev": "nodemon dist/server.js",
     "dev": "concurrently \"npm run watch\" \"npm run pre:dev\"",
-    "start": "node dist/server2.js"
+    "start": "node dist/server.js"
   },
   "keywords": [],
   "author": "",
