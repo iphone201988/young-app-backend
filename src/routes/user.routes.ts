@@ -48,7 +48,7 @@ userRoutes.put(
       maxCount: 5,
     },
   ]),
-  validateFiles(["profileImage", "licenseImage"]),
+  // validateFiles(["profileImage", "licenseImage"]),
   validate(userSchema.completeRegistrationSchema),
   userController.completeRegistration
 );

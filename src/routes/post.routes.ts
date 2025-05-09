@@ -50,4 +50,25 @@ postRoutes.put(
   postController.likeDislikePost
 );
 
+postRoutes.put(
+  "/likeDislikePost/:postId",
+  authenticationMiddleware,
+  validate(postSchema.commonSchema),
+  postController.likeDislikePost
+);
+
+postRoutes.get(
+  "/getSavedPosts",
+  authenticationMiddleware,
+  validate(postSchema.getPostsSchema),
+  postController.getSavedPosts
+);
+
+postRoutes.get(
+  "/:postId",
+  authenticationMiddleware,
+  validate(postSchema.commonSchema),
+  postController.getPostDetailsById
+);
+
 export default postRoutes;

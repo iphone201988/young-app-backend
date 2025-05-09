@@ -97,6 +97,7 @@ export interface UserModel extends Document {
   followedBy: any[];
   customers: any[];
   savedPosts: any[];
+  savedVaults: any[];
 
   createdAt: Date;
   updatedAt: Date;

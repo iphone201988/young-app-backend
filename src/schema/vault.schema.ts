@@ -19,7 +19,7 @@ const createVaultSchema = {
     // category: stringValidation("Category"),
 
     members: Joi.string()
-      .required()
+      .optional()
       .custom((value, helpers) => {
         const ids = value.split(",");
         for (const id of ids) {
@@ -32,7 +32,6 @@ const createVaultSchema = {
       .messages({
         "any.invalid": `Members must contain valid ObjectIds.`,
         "string.empty": `Members cannot be empty.`,
-        "any.required": `Members is required.`,
       }),
 
     category: Joi.string()

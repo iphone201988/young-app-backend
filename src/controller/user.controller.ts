@@ -92,7 +92,7 @@ const registerUser = TryCatch(
 
     return SUCCESS(res, 201, "Verification code has been sent to your email", {
       data: {
-        userId: user._id,
+        _id: user._id,
         role: user.role,
       },
     });
@@ -130,7 +130,7 @@ const verifyOtp = TryCatch(
     await user.save();
     return SUCCESS(res, 200, `OTP verified successfully`, {
       data: {
-        userId: user._id,
+        _id: user._id,
         role: user.role,
       },
     });
@@ -165,7 +165,7 @@ const sendOtp = TryCatch(
       `OTP ${type == 2 ? "resent" : "sent"} successfully`,
       {
         data: {
-          userId: user._id,
+          _id: user._id,
         },
       }
     );
@@ -209,8 +209,12 @@ const completeRegistration = TryCatch(
       "additionalPhotos",
     ]);
 
-    user.profileImage = images.profileImage[0];
-    user.licenseImage = images.licenseImage[0];
+    console.log("images::::", images);
+
+    if (images?.profileImage?.length)
+      user.profileImage = images.profileImage[0];
+    if (images?.licenseImage?.length)
+      user.licenseImage = images.licenseImage[0];
     user.packageName = packageName;
 
     if (role == userRole.GENERAL_MEMBER) {
@@ -226,20 +230,25 @@ const completeRegistration = TryCatch(
     }
 
     if (role == userRole.FINANCIAL_ADVISOR || role == userRole.FINANCIAL_FIRM) {
-      user.additionalPhotos = images.additionalPhotos[0];
+      console.log("FINANCIAL_FIRM::::", images);
+      if (images?.additionalPhotos?.length)
+        user.additionalPhotos = images.additionalPhotos;
       user.crdNumber = crdNumber;
       user.productsOffered = productsOffered;
       user.areaOfExpertise = areaOfExpertise;
     }
 
     if (role == userRole.STARTUP || role == userRole.SMALL_BUSINESS) {
-      user.additionalPhotos = images.additionalPhotos[0];
+      console.log("SMALL_BUSINESS::::", images);
+      if (images?.additionalPhotos?.length)
+        user.additionalPhotos = images.additionalPhotos;
       user.industry = industry;
       user.interestedIn = interestedIn;
     }
 
     if (role == userRole.INVESTOR) {
-      user.additionalPhotos = images.additionalPhotos[0];
+      if (images?.additionalPhotos?.length)
+        user.additionalPhotos = images.additionalPhotos;
       user.industry = industry;
       user.areaOfExpertise = areaOfExpertise;
     }
@@ -254,7 +263,7 @@ const completeRegistration = TryCatch(
     return SUCCESS(res, 200, "User registration completed successfully", {
       data: {
         ...data,
-        userId: user._id,
+        _id: user._id,
       },
     });
   }
@@ -293,6 +302,7 @@ const verify2FA = TryCatch(
     return SUCCESS(res, 200, "User authenticated successfully", {
       data: {
         token,
+        name: user.firstName + " " + user.lastName,
       },
     });
   }
@@ -329,11 +339,10 @@ const loginUser = TryCatch(
     user.lastLogin = new Date();
     await user.save();
 
-    let data: any = {};
-    if (!user.is2FAEnabled) data = await enable2FA(user);
+    const data = await enable2FA(user, !user.is2FAEnabled);
 
     return SUCCESS(res, 200, "Please enter the authentication code", {
-      data: { ...data, userId: user._id },
+      data: { ...data, _id: user._id, is2FAEnabled: user.is2FAEnabled },
     });
   }
 );
@@ -583,7 +592,11 @@ const updateUser = TryCatch(
     }
 
     await user.save();
-    return SUCCESS(res, 200, "User updated successfully");
+    return SUCCESS(res, 200, "User updated successfully", {
+      data: {
+        name: user.firstName + " " + user.lastName,
+      },
+    });
   }
 );
 

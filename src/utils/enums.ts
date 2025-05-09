@@ -32,3 +32,24 @@ export const vaultAccess = {
   PUBLIC: "public",
   PRIVATE: "private",
 };
+
+export const topics = {
+  Insurance: "Insurance",
+  Retirement: "Retirement",
+  Savings: "Savings",
+  Investment_Management: "Investment Management",
+  Child_Education: "Child Education",
+  Student_Loan_Management: "Student Loan Management",
+  Debt_Management: "Debt Management",
+  Tax_Planning: "Tax Planning",
+  Financial_Planning: "Financial Planning",
+  Wealth_Education: "Wealth Education",
+  Estate_Planning: "Estate Planning",
+  Investor: "Investor",
+  Venture_Capitalist: "Venture Capitalist",
+  Small_Business: "Small Business",
+  Grants: "Grants",
+  Loans: "Loans",
+  Annuities: "Annuities",
+  Stocks: "Stocks",
+};

@@ -1,17 +1,17 @@
-import Joi, { number } from "joi";
+import Joi from "joi";
 import {
   ObjectIdValidation,
   numberValidation,
   specificStringValidation,
   stringValidation,
 } from ".";
-import { postSymbol, postType, userRole } from "../utils/enums";
+import { postSymbol, postType, topics, userRole } from "../utils/enums";
 
 const createPostSchema = {
   body: Joi.object({
     title: stringValidation("Title"),
     description: stringValidation("Description"),
-    topic: stringValidation("Topic"),
+    topic: specificStringValidation("Topic", topics),
     type: specificStringValidation("Type", postType),
     symbol: Joi.string()
       .valid(...Object.values(postSymbol))

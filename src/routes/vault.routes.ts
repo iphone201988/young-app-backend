@@ -8,6 +8,34 @@ import validateFiles from "../middleware/validateFiles.middleware";
 
 const vaultRoutes = express.Router();
 
+vaultRoutes.put(
+  "/joinLeaveVault/:vaultId",
+  authenticationMiddleware,
+  validate(vaultSchema.commonSchema),
+  vaultController.joinLeaveVault
+);
+
+vaultRoutes.post(
+  "/addComment",
+  authenticationMiddleware,
+  validate(vaultSchema.addCommentSchema),
+  vaultController.addComment
+);
+
+vaultRoutes.put(
+  "/saveUnsaveVault/:vaultId",
+  authenticationMiddleware,
+  validate(vaultSchema.commonSchema),
+  vaultController.saveUnsaveVault
+);
+
+vaultRoutes.get(
+  "/getSavedVaults",
+  authenticationMiddleware,
+  validate(vaultSchema.getVaultsSchema),
+  vaultController.getSavedVaults
+);
+
 vaultRoutes.post(
   "/",
   authenticationMiddleware,
@@ -36,20 +64,6 @@ vaultRoutes.get(
   authenticationMiddleware,
   validate(vaultSchema.commonSchema),
   vaultController.getVaultDetailById
-);
-
-vaultRoutes.put(
-  "/joinLeaveVault/:vaultId",
-  authenticationMiddleware,
-  validate(vaultSchema.commonSchema),
-  vaultController.joinLeaveVault
-);
-
-vaultRoutes.post(
-  "/addComment",
-  authenticationMiddleware,
-  validate(vaultSchema.addCommentSchema),
-  vaultController.addComment
 );
 
 export default vaultRoutes;

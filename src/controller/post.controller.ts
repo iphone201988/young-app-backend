@@ -12,6 +12,7 @@ import Comments from "../model/comments.model";
 import mongoose from "mongoose";
 import User from "../model/user.model";
 import { postType } from "../utils/enums";
+import { PostModel } from "../../types/Database/types";
 
 const createPost = TryCatch(
   async (
@@ -44,8 +45,9 @@ const getPosts = TryCatch(
     res: Response,
     next: NextFunction
   ) => {
-    const { user } = req;
+    const { user, userId } = req;
     const { type, userType, sort, page = 1, limit = 10 } = req.query;
+    const skip = (page - 1) * limit;
 
     const posts = await Post.aggregate([
       {
@@ -53,6 +55,8 @@ const getPosts = TryCatch(
           type,
         },
       },
+      { $skip: skip },
+      { $limit: limit },
       {
         $lookup: {
           from: "users",
@@ -87,11 +91,22 @@ const getPosts = TryCatch(
       {
         $addFields: {
           commentsCount: { $size: "$comments" },
+          likesCount: { $size: "$likedBy" },
           isSaved: {
             $cond: {
               if: {
                 // $in: [new mongoose.Types.ObjectId(userId), "$savedByUsers"],
                 $in: ["$_id", user.savedPosts],
+              },
+              then: true,
+              else: false,
+            },
+          },
+          isLiked: {
+            $cond: {
+              if: {
+                // $in: [new mongoose.Types.ObjectId(userId), "$savedByUsers"],
+                $in: [new mongoose.Types.ObjectId(userId), "$likedBy"],
               },
               then: true,
               else: false,
@@ -211,6 +226,130 @@ const likeDislikePost = TryCatch(
   }
 );
 
+const getSavedPosts = TryCatch(
+  async (
+    req: Request<{}, {}, {}, GetPostsRequest>,
+    res: Response,
+    next: NextFunction
+  ) => {
+    const { userId } = req;
+    const { page = 1, limit = 20, type, userType } = req.query;
+
+    const skip = (page - 1) * limit;
+
+    let posts: any = await User.aggregate([
+      {
+        $match: {
+          _id: new mongoose.Types.ObjectId(userId),
+        },
+      },
+      { $skip: skip },
+      { $limit: limit },
+      {
+        $lookup: {
+          from: "posts",
+          let: { postIds: "$savedPosts" },
+          pipeline: [
+            {
+              $match: {
+                $expr: { $in: ["$_id", "$$postIds"] },
+              },
+            },
+            {
+              $project: {
+                __v: 0,
+                updatedAt: 0,
+                isPublished: 0,
+                isDeleted: 0,
+                comments: 0,
+              },
+            },
+          ],
+          as: "posts",
+        },
+      },
+      {
+        $unwind: "$posts",
+      },
+      {
+        $lookup: {
+          from: "users",
+          localField: "posts.userId",
+          foreignField: "_id",
+          as: "postUser",
+        },
+      },
+      { $unwind: "$postUser" },
+      {
+        $match: {
+          "postUser.role": userType,
+          "posts.type": type,
+        },
+      },
+      {
+        $lookup: {
+          from: "comments",
+          localField: "posts._id",
+          foreignField: "postId",
+          as: "comments",
+        },
+      },
+      {
+        $addFields: {
+          "posts.commentsCount": { $size: "$comments" },
+          "posts.likesCount": { $size: "$posts.likedBy" },
+          "posts.isLiked": {
+            $cond: {
+              if: {
+                $in: [new mongoose.Types.ObjectId(userId), "$posts.likedBy"],
+              },
+              then: true,
+              else: false,
+            },
+          },
+        },
+      },
+      {
+        $project: {
+          posts: 1,
+        },
+      },
+      {
+        $group: {
+          _id: "$_id",
+          posts: { $push: "$posts" },
+        },
+      },
+    ]);
+
+    posts = posts[0]?.posts.map((post: PostModel) => ({
+      ...post,
+      likedBy: undefined,
+    }));
+
+    return SUCCESS(res, 200, "Posts fetched successfully", {
+      data: posts,
+      pagination: {},
+    });
+  }
+);
+
+const getPostDetailsById = TryCatch(
+  async (req: Request<PostIdRequest>, res: Response, next: NextFunction) => {
+    const { postId } = req.params;
+
+    const post = await Post.findById(postId)
+      .populate("userId", "_id firstName lastName profileImage")
+      .select("-updatedAt -__v");
+
+    if (!post) {
+      return res.status(404).json({ message: "Post not found" });
+    }
+
+    return SUCCESS(res, 200, "Post fetched successfully", { data: post });
+  }
+);
+
 export default {
   createPost,
   getPosts,
@@ -218,4 +357,6 @@ export default {
   getAllComments,
   saveUnsavePost,
   likeDislikePost,
+  getSavedPosts,
+  getPostDetailsById,
 };

@@ -1,5 +1,5 @@
 import { Schema, model } from "mongoose";
-import { postSymbol, postType } from "../utils/enums";
+import { postSymbol, postType, topics } from "../utils/enums";
 import { PostModel } from "../../types/Database/types";
 
 const postSchema = new Schema<PostModel>(
@@ -10,7 +10,7 @@ const postSchema = new Schema<PostModel>(
     },
     title: { type: String },
     symbol: { type: String, enum: Object.values(postSymbol) },
-    topic: { type: String },
+    topic: { type: String, enum: Object.values(topics) },
     description: { type: String },
     image: { type: String },
     type: { type: String, enum: Object.values(postType) },

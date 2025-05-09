@@ -38,11 +38,18 @@ export const getUserByUsername = async (
   return user;
 };
 
-export const enable2FA = async (user: UserModel) => {
-  const base32_secret = generateBase32Secret();
-
-  user.secret = base32_secret;
-  await user.save();
+export const enable2FA = async (
+  user: UserModel,
+  generateNew: boolean = true
+) => {
+  let base32_secret: any;
+  if (generateNew) {
+    base32_secret = generateBase32Secret();
+    user.secret = base32_secret;
+    await user.save();
+  } else {
+    base32_secret = user.secret;
+  }
 
   const totp = new OTPAuth.TOTP({
     issuer: process.env.TOTP_ISSUER,

@@ -104,10 +104,11 @@ const userSchema = new Schema<UserModel>(
     customers: [{ type: Schema.Types.ObjectId, ref: "user" }],
     ...otherCommonFields,
     ...startupOtherFields,
-    ...financialAdvisorOtherFields,
+    ...financialAdvisorOtherFields, 
     ...memberOtherFields,
 
     savedPosts: [{ type: Schema.Types.ObjectId, ref: "post" }],
+    savedVaults: [{ type: Schema.Types.ObjectId, ref: "vault" }],
   },
   { timestamps: true }
 );

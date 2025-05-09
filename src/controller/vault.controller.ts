@@ -12,6 +12,7 @@ import {
 import { getVaultById } from "../services/vault.services";
 import ErrorHandler from "../utils/ErrorHandler";
 import Comments from "../model/comments.model";
+import User from "../model/user.model";
 
 const createVault = TryCatch(
   async (
@@ -45,6 +46,7 @@ const getVaults = TryCatch(
     res: Response,
     next: NextFunction
   ) => {
+    const { user } = req;
     const { role = "all", page = 1, limit = 20 } = req.query;
     const skip = (page - 1) * limit;
 
@@ -54,11 +56,65 @@ const getVaults = TryCatch(
     }
 
     const count = await Vault.countDocuments(query);
-    const vaults = await Vault.find({ access: vaultAccess.PUBLIC })
-      .populate("admin", "firstName lastName username profileImage")
-      .select("-members -__v -updatedAt -category -access")
-      .skip(skip)
-      .limit(limit);
+    // const vaults = await Vault.find(query)
+    //   .populate("admin", "firstName lastName username profileImage")
+    //   .select("-members -__v -updatedAt -category -access -isDeleted")
+    //   .skip(skip)
+    //   .limit(limit);
+
+    const vaults = await Vault.aggregate([
+      {
+        $match: query,
+      },
+      { $skip: skip },
+      { $limit: limit },
+      {
+        $lookup: {
+          from: "users",
+          let: { adminId: "$admin" },
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $eq: ["$_id", "$$adminId"],
+                },
+              },
+            },
+            {
+              $project: {
+                _id: 1,
+                firstName: 1,
+                lastName: 1,
+                username: 1,
+                profileImage: 1,
+              },
+            },
+          ],
+          as: "admin",
+        },
+      },
+      {
+        $addFields: {
+          isSaved: {
+            $cond: {
+              if: { $in: ["$_id", user.savedVaults] },
+              then: true,
+              else: false,
+            },
+          },
+        },
+      },
+      {
+        $project: {
+          members: 0,
+          __v: 0,
+          updatedAt: 0,
+          category: 0,
+          access: 0,
+          isDeleted: 0,
+        },
+      },
+    ]);
 
     return SUCCESS(res, 200, "Vaults fetched successfully", {
       data: {
@@ -96,6 +152,32 @@ const addRemoveMembersByAdmin = TryCatch(
     }
 
     return SUCCESS(res, 200, "Members updated successfully");
+  }
+);
+
+const saveUnsaveVault = TryCatch(
+  async (req: Request<VaultIdRequest>, res: Response, next: NextFunction) => {
+    const { userId, user } = req;
+    const { vaultId } = req.params;
+
+    await getVaultById(vaultId);
+
+    const isSaved = user.savedVaults.includes(vaultId);
+    if (isSaved) {
+      await User.findByIdAndUpdate(userId, {
+        $pull: { savedVaults: vaultId },
+      });
+    } else {
+      await User.findByIdAndUpdate(userId, {
+        $push: { savedVaults: vaultId },
+      });
+    }
+
+    return SUCCESS(
+      res,
+      200,
+      `Vault ${isSaved ? "unsaved" : "saved"} successfully`
+    );
   }
 );
 
@@ -181,6 +263,62 @@ const addComment = TryCatch(
   }
 );
 
+const getAllComments = TryCatch(
+  async (req: Request<VaultIdRequest>, res: Response, next: NextFunction) => {
+    const { vaultId } = req.params;
+
+    const vault = await getVaultById(vaultId);
+
+    const comments = await Comments.find({ vaultId: vault._id })
+      .populate("userId", "_id firstName lastName profileImage")
+      .select("-updatedAt -__v")
+      .sort({ createdAt: -1 });
+
+    return SUCCESS(res, 200, "Comments fetched successfully", {
+      data: { comments },
+    });
+  }
+);
+
+const getSavedVaults = TryCatch(
+  async (
+    req: Request<{}, {}, {}, GetVaultsRequest>,
+    res: Response,
+    next: NextFunction
+  ) => {
+    const { userId, user } = req;
+    const { role = "all", page = 1, limit = 20 } = req.query;
+    const skip = (page - 1) * limit;
+
+    const query: any = {
+      $or: [{ members: userId }, { _id: { $in: user.savedVaults } }],
+    };
+
+    if (role !== "all") {
+      query.category = { $in: [role] };
+    }
+
+    const count = await Vault.countDocuments(query);
+
+    const vaults = await Vault.find(query)
+      .populate("admin", "firstName lastName username profileImage")
+      .select("-members -__v -updatedAt -category -access -isDeleted")
+      .skip(skip)
+      .limit(limit);
+
+    return SUCCESS(res, 200, "Vaults fetched successfully", {
+      data: {
+        vaults,
+      },
+      pagination: {
+        total: count,
+        page: page,
+        limit: limit,
+      },
+    });
+  }
+);
+
 export default {
   createVault,
   getVaults,
@@ -188,4 +326,7 @@ export default {
   getVaultDetailById,
   joinLeaveVault,
   addComment,
+  getAllComments,
+  getSavedVaults,
+  saveUnsaveVault,
 };
