@@ -124,6 +124,31 @@ const getVaults = TryCatch(
         },
       },
       {
+        $lookup: {
+          from: "users",
+          let: { members: "$members" },
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $in: ["$_id", "$$members"],
+                },
+              },
+            },
+            {
+              $project: {
+                _id: 1,
+                profileImage: 1,
+              },
+            },
+            {
+              $limit: 4,
+            },
+          ],
+          as: "members",
+        },
+      },
+      {
         $unwind: {
           path: "$admin",
         },
@@ -144,7 +169,6 @@ const getVaults = TryCatch(
       { $limit: limit },
       {
         $project: {
-          members: 0,
           __v: 0,
           updatedAt: 0,
           category: 0,
@@ -405,6 +429,31 @@ const getSavedVaults = TryCatch(
         },
       },
       {
+        $lookup: {
+          from: "users",
+          let: { members: "$members" },
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $in: ["$_id", "$$members"],
+                },
+              },
+            },
+            {
+              $project: {
+                _id: 1,
+                profileImage: 1,
+              },
+            },
+            {
+              $limit: 4,
+            },
+          ],
+          as: "members",
+        },
+      },
+      {
         $unwind: {
           path: "$admin",
         },
@@ -418,7 +467,6 @@ const getSavedVaults = TryCatch(
       { $limit: limit },
       {
         $project: {
-          members: 0,
           __v: 0,
           updatedAt: 0,
           category: 0,
