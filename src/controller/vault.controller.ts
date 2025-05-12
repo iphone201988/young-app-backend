@@ -89,6 +89,8 @@ const getVaults = TryCatch(
       {
         $match: query,
       },
+      { $skip: skip },
+      { $limit: limit },
       {
         $lookup: {
           from: "comments",
@@ -165,8 +167,7 @@ const getVaults = TryCatch(
           },
         },
       },
-      { $skip: skip },
-      { $limit: limit },
+      { $sort: { createdAt: -1 } },
       {
         $project: {
           __v: 0,
@@ -394,6 +395,8 @@ const getSavedVaults = TryCatch(
       {
         $match: query,
       },
+      { $skip: skip },
+      { $limit: limit },
       {
         $lookup: {
           from: "comments",
@@ -463,8 +466,7 @@ const getSavedVaults = TryCatch(
           commentsCount: { $size: "$comments" },
         },
       },
-      { $skip: skip },
-      { $limit: limit },
+      { $sort: { createdAt: -1 } },
       {
         $project: {
           __v: 0,
