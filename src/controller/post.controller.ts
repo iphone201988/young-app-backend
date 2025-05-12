@@ -47,7 +47,36 @@ const getPosts = TryCatch(
   ) => {
     const { user, userId } = req;
     const { type, userType, sort, page = 1, limit = 10 } = req.query;
-    const skip = (page - 1) * limit;
+    const skip = (Number(page) - 1) * limit;
+
+    const total = await Post.aggregate([
+      {
+        $match: {
+          type,
+        },
+      },
+      {
+        $lookup: {
+          from: "users",
+          let: { userId: "$userId" },
+          pipeline: [
+            {
+              $match: {
+                $expr: { $eq: ["$_id", "$$userId"] },
+                role: userType,
+              },
+            },
+          ],
+          as: "user",
+        },
+      },
+      {
+        $unwind: "$user",
+      },
+      {
+        $count: "count",
+      },
+    ]);
 
     const posts = await Post.aggregate([
       {
@@ -124,6 +153,7 @@ const getPosts = TryCatch(
           isPublished: 0,
           isDeleted: 0,
           comments: 0,
+          likedBy: 0,
         },
       },
       {
@@ -131,7 +161,14 @@ const getPosts = TryCatch(
       },
     ]);
 
-    return SUCCESS(res, 200, "Posts fetched successfully", { data: { posts } });
+    return SUCCESS(res, 200, "Posts fetched successfully", {
+      data: { posts },
+      pagination: {
+        total: total[0]?.count || 0,
+        page: Number(page),
+        limit: Number(limit),
+      },
+    });
   }
 );
 
@@ -232,76 +269,88 @@ const getSavedPosts = TryCatch(
     res: Response,
     next: NextFunction
   ) => {
-    const { userId } = req;
+    const { userId, user } = req;
     const { page = 1, limit = 20, type, userType } = req.query;
 
     const skip = (page - 1) * limit;
 
-    let posts: any = await User.aggregate([
+    const query: any = {
+      _id: { $in: user.savedPosts },
+      type,
+    };
+
+    const total = await Post.aggregate([
       {
-        $match: {
-          _id: new mongoose.Types.ObjectId(userId),
+        $match: query,
+      },
+      {
+        $lookup: {
+          from: "users",
+          let: { userId: "$userId" },
+          pipeline: [
+            {
+              $match: {
+                $expr: { $eq: ["$_id", "$$userId"] },
+                role: userType,
+              },
+            },
+          ],
+          as: "user",
         },
+      },
+      {
+        $unwind: "$user",
+      },
+      {
+        $count: "count",
+      },
+    ]);
+
+    const posts = await Post.aggregate([
+      {
+        $match: query,
       },
       { $skip: skip },
       { $limit: limit },
       {
         $lookup: {
-          from: "posts",
-          let: { postIds: "$savedPosts" },
+          from: "users",
+          let: { userId: "$userId" },
           pipeline: [
             {
               $match: {
-                $expr: { $in: ["$_id", "$$postIds"] },
+                $expr: { $eq: ["$_id", "$$userId"] },
+                role: userType,
               },
             },
             {
               $project: {
-                __v: 0,
-                updatedAt: 0,
-                isPublished: 0,
-                isDeleted: 0,
-                comments: 0,
+                firstName: 1,
+                lastName: 1,
+                profileImage: 1,
+                _id: 1,
               },
             },
           ],
-          as: "posts",
-        },
-      },
-      {
-        $unwind: "$posts",
-      },
-      {
-        $lookup: {
-          from: "users",
-          localField: "posts.userId",
-          foreignField: "_id",
-          as: "postUser",
-        },
-      },
-      { $unwind: "$postUser" },
-      {
-        $match: {
-          "postUser.role": userType,
-          "posts.type": type,
+          as: "user",
         },
       },
       {
         $lookup: {
           from: "comments",
-          localField: "posts._id",
+          localField: "_id",
           foreignField: "postId",
           as: "comments",
         },
       },
       {
         $addFields: {
-          "posts.commentsCount": { $size: "$comments" },
-          "posts.likesCount": { $size: "$posts.likedBy" },
-          "posts.isLiked": {
+          commentsCount: { $size: "$comments" },
+          likesCount: { $size: "$likedBy" },
+          isLiked: {
             $cond: {
               if: {
-                $in: [new mongoose.Types.ObjectId(userId), "$posts.likedBy"],
+                $in: [new mongoose.Types.ObjectId(userId), "$likedBy"],
               },
               then: true,
               else: false,
@@ -310,26 +359,30 @@ const getSavedPosts = TryCatch(
         },
       },
       {
+        $unwind: "$user",
+      },
+      {
         $project: {
-          posts: 1,
+          __v: 0,
+          updatedAt: 0,
+          isPublished: 0,
+          isDeleted: 0,
+          comments: 0,
+          likedBy: 0,
         },
       },
       {
-        $group: {
-          _id: "$_id",
-          posts: { $push: "$posts" },
-        },
+        $sort: { createdAt: -1 },
       },
     ]);
 
-    posts = posts[0]?.posts.map((post: PostModel) => ({
-      ...post,
-      likedBy: undefined,
-    }));
-
     return SUCCESS(res, 200, "Posts fetched successfully", {
       data: posts,
-      pagination: {},
+      pagination: {
+        total: total[0]?.count || 0,
+        page: Number(page),
+        limit: Number(limit),
+      },
     });
   }
 );

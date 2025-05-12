@@ -38,7 +38,7 @@ const createVaultSchema = {
       .required()
       .custom((value, helpers) => {
         const categories = value.split(",");
-        const validCategories = Object.values({ ALL: "all", ...userRole });
+        const validCategories = Object.values({ ...userRole });
         for (const cat of categories) {
           if (!validCategories.includes(cat)) {
             return helpers.error("any.invalid");
@@ -48,7 +48,6 @@ const createVaultSchema = {
       }, "Category validation")
       .messages({
         "any.invalid": `Category must be one of: ${Object.values({
-          ALL: "all",
           ...userRole,
         }).join(", ")}.`,
         "string.empty": `Category cannot be empty.`,
@@ -59,7 +58,9 @@ const createVaultSchema = {
 
 const getVaultsSchema = {
   query: Joi.object({
-    userType: specificStringValidation("User Type", { ALL: "all", ...userRole }),
+    userType: specificStringValidation("User Type", {
+      ...userRole,
+    }),
     page: numberValidation("Page", false),
     limit: numberValidation("Limit", false),
   }),
@@ -92,5 +93,5 @@ export default {
   getVaultsSchema,
   addRemoveMembersByAdminSchema,
   commonSchema,
-  addCommentSchema
+  addCommentSchema,
 };

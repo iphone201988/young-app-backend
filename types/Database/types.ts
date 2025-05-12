@@ -146,3 +146,8 @@ export interface VaultModel extends Document {
   createdAt: Date;
   updatedAt: Date;
 }
+
+export interface EventsMModel extends Document {
+  createdAt: Date;
+  updatedAt: Date;
+}

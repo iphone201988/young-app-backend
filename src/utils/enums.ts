@@ -10,7 +10,7 @@ export const userRole = {
   SMALL_BUSINESS: "small_business",
   STARTUP: "startup",
   INVESTOR: "investor",
-};
+};  
 
 export const accountPackage = {
   STANDARD: "standard",
@@ -52,4 +52,10 @@ export const topics = {
   Loans: "Loans",
   Annuities: "Annuities",
   Stocks: "Stocks",
+};
+
+export const eventStaus = {
+  PAST: "past",
+  PRESENT: "present",
+  FUTURE: "future",
 };

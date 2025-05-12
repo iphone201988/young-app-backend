@@ -26,7 +26,7 @@ const vaultSchema = new Schema<VaultModel>(
     category: [
       {
         type: String,
-        enum: Object.values({ ALL: "all", ...userRole }),
+        enum: Object.values({ ...userRole }),
       },
     ],
     isDeleted: {

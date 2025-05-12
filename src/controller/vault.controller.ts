@@ -47,27 +47,46 @@ const getVaults = TryCatch(
     next: NextFunction
   ) => {
     const { user } = req;
-    const { userType = "all", page = 1, limit = 20 } = req.query;
+    const { userType, page = 1, limit = 20 } = req.query;
     const skip = (Number(page) - 1) * limit;
 
-    const query: any = { access: vaultAccess.PUBLIC };
-    if (userType !== "all") {
-      query.category = { $in: [userType] };
-    }
+    const query: any = {
+      access: vaultAccess.PUBLIC,
+    };
 
-    const count = await Vault.countDocuments(query);
-    // const vaults = await Vault.find(query)
-    //   .populate("admin", "firstName lastName username profileImage")
-    //   .select("-members -__v -updatedAt -category -access -isDeleted")
-    //   .skip(skip)
-    //   .limit(limit);
+    const total = await Vault.aggregate([
+      {
+        $match: query,
+      },
+      {
+        $lookup: {
+          from: "users",
+          let: { adminId: "$admin" },
+          pipeline: [
+            {
+              $match: {
+                $expr: { $eq: ["$_id", "$$adminId"] },
+                role: userType,
+              },
+            },
+          ],
+          as: "admin",
+        },
+      },
+      {
+        $unwind: {
+          path: "$admin",
+        },
+      },
+      {
+        $count: "count",
+      },
+    ]);
 
     const vaults = await Vault.aggregate([
       {
         $match: query,
       },
-      { $skip: skip },
-      { $limit: limit },
       {
         $lookup: {
           from: "comments",
@@ -86,6 +105,7 @@ const getVaults = TryCatch(
                 $expr: {
                   $eq: ["$_id", "$$adminId"],
                 },
+                role: userType,
               },
             },
             {
@@ -104,7 +124,6 @@ const getVaults = TryCatch(
       {
         $unwind: {
           path: "$admin",
-          preserveNullAndEmptyArrays: true,
         },
       },
       {
@@ -119,6 +138,8 @@ const getVaults = TryCatch(
           },
         },
       },
+      { $skip: skip },
+      { $limit: limit },
       {
         $project: {
           members: 0,
@@ -137,7 +158,7 @@ const getVaults = TryCatch(
         vaults,
       },
       pagination: {
-        total: count,
+        total: total[0]?.count || 0,
         page: Number(page),
         limit: Number(limit),
       },
@@ -303,25 +324,48 @@ const getSavedVaults = TryCatch(
     next: NextFunction
   ) => {
     const { userId, user } = req;
-    const { userType = "all", page = 1, limit = 20 } = req.query;
+    const { userType, page = 1, limit = 20 } = req.query;
     const skip = (page - 1) * limit;
 
     const query: any = {
       $or: [{ members: userId }, { _id: { $in: user.savedVaults } }],
     };
 
-    if (userType !== "all") {
-      query.category = { $in: [userType] };
-    }
-
-    const count = await Vault.countDocuments(query);
+    const total = await Vault.aggregate([
+      {
+        $match: query,
+      },
+      {
+        $lookup: {
+          from: "users",
+          let: { adminId: "$admin" },
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $eq: ["$_id", "$$adminId"],
+                },
+                role: userType,
+              },
+            },
+          ],
+          as: "admin",
+        },
+      },
+      {
+        $unwind: {
+          path: "$admin",
+        },
+      },
+      {
+        $count: "count",
+      },
+    ]);
 
     const vaults = await Vault.aggregate([
       {
         $match: query,
       },
-      { $skip: skip },
-      { $limit: limit },
       {
         $lookup: {
           from: "comments",
@@ -340,6 +384,7 @@ const getSavedVaults = TryCatch(
                 $expr: {
                   $eq: ["$_id", "$$adminId"],
                 },
+                role: userType,
               },
             },
             {
@@ -358,7 +403,6 @@ const getSavedVaults = TryCatch(
       {
         $unwind: {
           path: "$admin",
-          preserveNullAndEmptyArrays: true,
         },
       },
       {
@@ -366,6 +410,8 @@ const getSavedVaults = TryCatch(
           commentsCount: { $size: "$comments" },
         },
       },
+      { $skip: skip },
+      { $limit: limit },
       {
         $project: {
           members: 0,
@@ -384,7 +430,7 @@ const getSavedVaults = TryCatch(
         vaults,
       },
       pagination: {
-        total: count,
+        total: total[0]?.count || 0,
         page: Number(page),
         limit: Number(limit),
       },
