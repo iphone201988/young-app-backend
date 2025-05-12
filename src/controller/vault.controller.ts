@@ -121,6 +121,7 @@ const getVaults = TryCatch(
           category: 0,
           access: 0,
           isDeleted: 0,
+          comments: 0,
         },
       },
     ]);
@@ -309,11 +310,62 @@ const getSavedVaults = TryCatch(
 
     const count = await Vault.countDocuments(query);
 
-    const vaults = await Vault.find(query)
-      .populate("admin", "firstName lastName username profileImage")
-      .select("-members -__v -updatedAt -category -access -isDeleted")
-      .skip(skip)
-      .limit(limit);
+    const vaults = await Vault.aggregate([
+        {
+          $match: query,
+        },
+        { $skip: skip },
+        { $limit: limit },
+        {
+          $lookup: {
+            from: "comments",
+            localField: "_id",
+            foreignField: "vaultId",
+            as: "comments",
+          },
+        },
+        {
+          $lookup: {
+            from: "users",
+            let: { adminId: "$admin" },
+            pipeline: [
+              {
+                $match: {
+                  $expr: {
+                    $eq: ["$_id", "$$adminId"],
+                  },
+                },
+              },
+              {
+                $project: {
+                  _id: 1,
+                  firstName: 1,
+                  lastName: 1,
+                  username: 1,
+                  profileImage: 1,
+                },
+              },
+            ],
+            as: "admin",
+          },
+        },
+        {
+          $addFields: {
+            commentsCount: { $size: "$comments" },
+          },
+        },
+        {
+          $project: {
+            members: 0,
+            __v: 0,
+            updatedAt: 0,
+            category: 0,
+            access: 0,
+            isDeleted: 0,
+            comments: 0,
+          },
+        },
+      ]);
 
     return SUCCESS(res, 200, "Vaults fetched successfully", {
       data: {
