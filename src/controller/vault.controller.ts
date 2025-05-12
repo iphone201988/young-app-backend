@@ -305,7 +305,12 @@ const joinLeaveVault = TryCatch(
     return SUCCESS(
       res,
       200,
-      `${isAlreadyMember ? "Left" : "Joined"} vault successfully`
+      `${isAlreadyMember ? "Left" : "Joined"} vault successfully`,
+      {
+        data: {
+          vaultId,
+        },
+      }
     );
   }
 );

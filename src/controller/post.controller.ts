@@ -240,7 +240,12 @@ const saveUnsavePost = TryCatch(
     return SUCCESS(
       res,
       200,
-      `Post ${isSaved ? "unsaved" : "saved"} successfully`
+      `Post ${isSaved ? "unsaved" : "saved"} successfully`,
+      {
+        data: {
+          postId,
+        },
+      }
     );
   }
 );
@@ -266,7 +271,12 @@ const likeDislikePost = TryCatch(
     return SUCCESS(
       res,
       200,
-      `Post ${isLiked ? "disliked" : "liked"} successfully`
+      `Post ${isLiked ? "disliked" : "liked"} successfully`,
+      {
+        data:{
+          postId
+        }
+      }
     );
   }
 );
