@@ -240,7 +240,12 @@ const saveUnsaveVault = TryCatch(
     return SUCCESS(
       res,
       200,
-      `Vault ${isSaved ? "unsaved" : "saved"} successfully`
+      `Vault ${isSaved ? "unsaved" : "saved"} successfully`,
+      {
+        data: {
+          vaultId,
+        },
+      }
     );
   }
 );
