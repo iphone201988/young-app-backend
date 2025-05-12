@@ -48,7 +48,7 @@ const getVaults = TryCatch(
   ) => {
     const { user } = req;
     const { userType = "all", page = 1, limit = 20 } = req.query;
-    const skip = (page - 1) * limit;
+    const skip = (Number(page) - 1) * limit;
 
     const query: any = { access: vaultAccess.PUBLIC };
     if (userType !== "all") {
@@ -138,8 +138,8 @@ const getVaults = TryCatch(
       },
       pagination: {
         total: count,
-        page: page,
-        limit: limit,
+        page: Number(page),
+        limit: Number(limit),
       },
     });
   }
@@ -385,8 +385,8 @@ const getSavedVaults = TryCatch(
       },
       pagination: {
         total: count,
-        page: page,
-        limit: limit,
+        page: Number(page),
+        limit: Number(limit),
       },
     });
   }
