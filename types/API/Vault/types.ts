@@ -8,7 +8,7 @@ export type CreateVaultRequest = {
 };
 
 export type GetVaultsRequest = {
-  role?: string;
+  userType?: string;
   page?: number;
   limit?: number;
 };

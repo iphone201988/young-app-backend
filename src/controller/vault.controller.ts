@@ -47,12 +47,12 @@ const getVaults = TryCatch(
     next: NextFunction
   ) => {
     const { user } = req;
-    const { role = "all", page = 1, limit = 20 } = req.query;
+    const { userType = "all", page = 1, limit = 20 } = req.query;
     const skip = (page - 1) * limit;
 
     const query: any = { access: vaultAccess.PUBLIC };
-    if (role !== "all") {
-      query.category = { $in: [role] };
+    if (userType !== "all") {
+      query.category = { $in: [userType] };
     }
 
     const count = await Vault.countDocuments(query);
@@ -287,15 +287,15 @@ const getSavedVaults = TryCatch(
     next: NextFunction
   ) => {
     const { userId, user } = req;
-    const { role = "all", page = 1, limit = 20 } = req.query;
+    const { userType = "all", page = 1, limit = 20 } = req.query;
     const skip = (page - 1) * limit;
 
     const query: any = {
       $or: [{ members: userId }, { _id: { $in: user.savedVaults } }],
     };
 
-    if (role !== "all") {
-      query.category = { $in: [role] };
+    if (userType !== "all") {
+      query.category = { $in: [userType] };
     }
 
     const count = await Vault.countDocuments(query);

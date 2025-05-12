@@ -59,7 +59,7 @@ const createVaultSchema = {
 
 const getVaultsSchema = {
   query: Joi.object({
-    role: specificStringValidation("Role", { ALL: "all", userRole }),
+    userType: specificStringValidation("User Type", { ALL: "all", ...userRole }),
     page: numberValidation("Page", false),
     limit: numberValidation("Limit", false),
   }),
