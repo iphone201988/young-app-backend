@@ -70,6 +70,14 @@ const getVaults = TryCatch(
       { $limit: limit },
       {
         $lookup: {
+          from: "comments",
+          localField: "_id",
+          foreignField: "vaultId",
+          as: "comments",
+        },
+      },
+      {
+        $lookup: {
           from: "users",
           let: { adminId: "$admin" },
           pipeline: [
@@ -95,6 +103,7 @@ const getVaults = TryCatch(
       },
       {
         $addFields: {
+          commentsCount: { $size: "$comments" },
           isSaved: {
             $cond: {
               if: { $in: ["$_id", user.savedVaults] },
