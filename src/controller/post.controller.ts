@@ -46,7 +46,7 @@ const getPosts = TryCatch(
     next: NextFunction
   ) => {
     const { user, userId } = req;
-    const { type, userType, sort, page = 1, limit = 10 } = req.query;
+    const { type, userType, sort, page = 1, limit = 20 } = req.query;
     const skip = (Number(page) - 1) * limit;
 
     const total = await Post.aggregate([
