@@ -1,10 +1,12 @@
 export type AddCommentRequest = {
   id: string;
   comment: string;
-  type: number;
+  type: string;
 };
 
 export type GetCommentsRequest = {
   id: string;
-  type: number;
+  type: string;
+  page: number;
+  limit: number;
 };
