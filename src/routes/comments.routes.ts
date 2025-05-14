@@ -20,4 +20,11 @@ commentRoutes.get(
   commentsController.getAllComments
 );
 
+commentRoutes.put(
+  "/:id",
+  authenticationMiddleware,
+  validate(commentsSchema.likeDislikeCommentSchema),
+  commentsController.likeDislikeComment
+);
+
 export default commentRoutes;

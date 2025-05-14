@@ -9,6 +9,7 @@ import {
   AddCommentRequest,
   GetCommentsRequest,
 } from "../../types/API/Comment/types";
+import { CommentsModel } from "../../types/Database/types";
 
 const addComment = TryCatch(
   async (
@@ -16,13 +17,15 @@ const addComment = TryCatch(
     res: Response,
     next: NextFunction
   ) => {
-    const { userId } = req;
+    const { userId, user } = req;
     const { id, comment, type } = req.body;
+
+    let newComment: CommentsModel;
 
     if (type == "post") {
       const post = await getPostById(id);
 
-      await Comments.create({
+      newComment = await Comments.create({
         userId,
         postId: post._id,
         comment,
@@ -39,7 +42,7 @@ const addComment = TryCatch(
           new ErrorHandler("You are not a member of this vault", 403)
         );
 
-      await Comments.create({
+      newComment = await Comments.create({
         userId,
         vaultId: id,
         comment,
@@ -47,7 +50,22 @@ const addComment = TryCatch(
       });
     }
 
-    return SUCCESS(res, 200, `Comment added successfully`);
+    return SUCCESS(res, 200, `Comment added successfully`, {
+      data: {
+        comment: {
+          ...newComment.toObject(),
+          userId: {
+            _id: userId,
+            firstName: user.firstName,
+            lastName: user.lastName,
+            profileImage: user?.profileImage,
+          },
+          likedBy: undefined,
+          __v: undefined,
+          updatedAt: undefined,
+        },
+      },
+    });
   }
 );
 
@@ -80,7 +98,7 @@ const getAllComments = TryCatch(
       const vault = await getVaultById(id);
       comments = await Comments.find({ vaultId: id })
         .populate("userId", "_id firstName lastName profileImage")
-        .select("-updatedAt -__v")
+        .select("-updatedAt -__v -likedBy")
         .skip(skip)
         .limit(limit)
         .sort({ createdAt: -1 });
@@ -93,7 +111,36 @@ const getAllComments = TryCatch(
   }
 );
 
+const likeDislikeComment = TryCatch(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const { id } = req.params;
+    const { userId } = req;
+
+    const comment = await Comments.findById(id);
+    if (!comment) return next(new ErrorHandler("Comment not found", 404));
+
+    const isLiked = comment.likedBy.includes(userId);
+
+    if (isLiked) {
+      await Comments.findByIdAndUpdate(id, {
+        $pull: { likedBy: userId },
+      });
+    } else {
+      await Comments.findByIdAndUpdate(id, {
+        $push: { likedBy: userId },
+      });
+    }
+
+    return SUCCESS(
+      res,
+      200,
+      `Comment ${isLiked ? "disliked" : "liked"} successfully`
+    );
+  }
+);
+
 export default {
   addComment,
   getAllComments,
+  likeDislikeComment,
 };

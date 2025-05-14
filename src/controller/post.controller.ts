@@ -12,7 +12,6 @@ import Comments from "../model/comments.model";
 import mongoose from "mongoose";
 import User from "../model/user.model";
 import { postType } from "../utils/enums";
-import { PostModel } from "../../types/Database/types";
 
 const createPost = TryCatch(
   async (
@@ -273,9 +272,9 @@ const likeDislikePost = TryCatch(
       200,
       `Post ${isLiked ? "disliked" : "liked"} successfully`,
       {
-        data:{
-          postId
-        }
+        data: {
+          postId,
+        },
       }
     );
   }
@@ -413,13 +412,48 @@ const getPostDetailsById = TryCatch(
 
     const post = await Post.findById(postId)
       .populate("userId", "_id firstName lastName profileImage")
-      .select("-updatedAt -__v");
+      .select("-updatedAt -__v -likedBy");
 
     if (!post) {
       return res.status(404).json({ message: "Post not found" });
     }
 
-    return SUCCESS(res, 200, "Post fetched successfully", { data: post });
+    return SUCCESS(res, 200, "Post fetched successfully", { data: { post } });
+  }
+);
+
+const getTrendingTopics = TryCatch(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const topics = await Post.aggregate([
+      {
+        $match: {
+          isDeleted: false,
+          isPublished: true,
+          type: postType.SHARE,
+        },
+      },
+      {
+        $group: {
+          _id: "$topic",
+          count: { $sum: 1 },
+        },
+      },
+      {
+        $sort: { count: -1 },
+      },
+      { $limit: 10 },
+      {
+        $project: {
+          topic: "$_id",
+          count: 1,
+          _id: 0,
+        },
+      },
+    ]);
+
+    return SUCCESS(res, 200, "Trending topics fetched successfully", {
+      data: { topics },
+    });
   }
 );
 
@@ -432,4 +466,5 @@ export default {
   likeDislikePost,
   getSavedPosts,
   getPostDetailsById,
+  getTrendingTopics,
 };

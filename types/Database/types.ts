@@ -127,6 +127,7 @@ export interface CommentsModel extends Document {
   vaultId: any;
   comment: string;
   type: string;
+  likedBy: any[];
 
   createdAt: Date;
   updatedAt: Date;
@@ -148,6 +149,15 @@ export interface VaultModel extends Document {
 }
 
 export interface EventsMModel extends Document {
+  userId: any;
+  title: string;
+  topic: string;
+  description: string;
+  file: string;
+  type: string;
+  scheduledDate: Date;
+  isDeleted: boolean;
+
   createdAt: Date;
   updatedAt: Date;
 }

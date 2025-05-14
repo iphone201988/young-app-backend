@@ -22,7 +22,14 @@ const getAllCommentsSchema = {
   }),
 };
 
+const likeDislikeCommentSchema = {
+  params: Joi.object({
+    id: ObjectIdValidation("ID"),
+  }),
+};
+
 export default {
   addCommentsSchema,
   getAllCommentsSchema,
+  likeDislikeCommentSchema,
 };

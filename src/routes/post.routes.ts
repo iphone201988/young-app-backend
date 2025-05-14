@@ -65,6 +65,12 @@ postRoutes.get(
 );
 
 postRoutes.get(
+  "/getTrendingTopics",
+  authenticationMiddleware,
+  postController.getTrendingTopics
+);
+
+postRoutes.get(
   "/:postId",
   authenticationMiddleware,
   validate(postSchema.commonSchema),

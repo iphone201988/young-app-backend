@@ -10,7 +10,7 @@ export const userRole = {
   SMALL_BUSINESS: "small_business",
   STARTUP: "startup",
   INVESTOR: "investor",
-};  
+};
 
 export const accountPackage = {
   STANDARD: "standard",
@@ -54,8 +54,8 @@ export const topics = {
   Stocks: "Stocks",
 };
 
-export const eventStaus = {
-  PAST: "past",
-  PRESENT: "present",
-  FUTURE: "future",
+export const eventType = {
+  SCHEDULED_LIVES: "scheduled_lives",
+  GENERAL_EVENTS_BY_ADMIN: "general_events_by_admin",
+  OWN_EVENTS: "own_events",
 };
