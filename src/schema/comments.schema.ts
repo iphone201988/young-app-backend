@@ -2,21 +2,23 @@ import Joi from "joi";
 import {
   ObjectIdValidation,
   specificNumberValidation,
+  specificStringValidation,
   stringValidation,
 } from ".";
+import { postType } from "../utils/enums";
 
 const addCommentsSchema = {
   body: Joi.object({
     id: ObjectIdValidation("ID"),
     comment: stringValidation("Comment"),
-    type: specificNumberValidation("Type", { post: 1, vault: 2 }),
+    type: specificStringValidation("Type", postType),
   }),
 };
 
 const getAllCommentsSchema = {
   query: Joi.object({
     id: ObjectIdValidation("ID"),
-    type: specificNumberValidation("Type", { post: 1, vault: 2 }),
+    type: specificStringValidation("Type", postType),
   }),
 };
 

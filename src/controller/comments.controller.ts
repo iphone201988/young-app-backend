@@ -19,7 +19,7 @@ const addComment = TryCatch(
     const { userId } = req;
     const { id, comment, type } = req.body;
 
-    if (type == 1) {
+    if (type == "post") {
       const post = await getPostById(id);
 
       await Comments.create({
@@ -28,7 +28,8 @@ const addComment = TryCatch(
         comment,
         type: postType.SHARE,
       });
-    } else {
+    }
+    if (type == "vault") {
       const vault = await getVaultById(id);
 
       const isMember = vault.members.includes(userId);
@@ -56,27 +57,38 @@ const getAllComments = TryCatch(
     res: Response,
     next: NextFunction
   ) => {
-    const { id, type } = req.query;
+    let { id, type, page = 1, limit = process.env.LIMIT } = req.query;
+    page = Number(page);
+    limit = Number(limit);
+    const skip = (page - 1) * limit;
 
-    let comments: any;
+    let comments: any, total: number;
 
-    if (type == 1) {
+    if (type == "post") {
       const post = await getPostById(id);
 
-      const comments = await Comments.find({ postId: id })
+      comments = await Comments.find({ postId: id })
         .populate("userId", "_id firstName lastName profileImage")
         .select("-updatedAt -__v")
+        .skip(skip)
+        .limit(limit)
         .sort({ createdAt: -1 });
-    } else {
+      total = await Comments.countDocuments({ postId: id });
+    }
+
+    if (type == "vault") {
       const vault = await getVaultById(id);
       comments = await Comments.find({ vaultId: id })
         .populate("userId", "_id firstName lastName profileImage")
         .select("-updatedAt -__v")
+        .skip(skip)
+        .limit(limit)
         .sort({ createdAt: -1 });
+      total = await Comments.countDocuments({ vaultId: id });
     }
 
     return SUCCESS(res, 200, "Comments fetched successfully", {
-      data: { comments },
+      data: { comments, pagination: { total, page, limit } },
     });
   }
 );
