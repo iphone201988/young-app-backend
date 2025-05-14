@@ -60,6 +60,7 @@ const addComment = TryCatch(
             lastName: user.lastName,
             profileImage: user?.profileImage,
           },
+          isLiked: false,
           likedBy: undefined,
           __v: undefined,
           updatedAt: undefined,
@@ -75,6 +76,7 @@ const getAllComments = TryCatch(
     res: Response,
     next: NextFunction
   ) => {
+    const { userId } = req;
     let { id, type, page = 1, limit = process.env.LIMIT } = req.query;
     page = Number(page);
     limit = Number(limit);
@@ -105,8 +107,25 @@ const getAllComments = TryCatch(
       total = await Comments.countDocuments({ vaultId: id });
     }
 
+    comments = comments.map((comment: any) => {
+      if (comment?.likedBy?.includes(userId)) {
+        return {
+          ...comment.toObject(),
+          isLiked: true,
+        };
+      } else {
+        return {
+          ...comment.toObject(),
+          isLiked: false,
+        };
+      }
+    });
+
     return SUCCESS(res, 200, "Comments fetched successfully", {
-      data: { comments, pagination: { total: total / limit, page, limit } },
+      data: {
+        comments,
+        pagination: { total: Math.ceil(total / limit), page, limit },
+      },
     });
   }
 );
