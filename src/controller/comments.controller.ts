@@ -106,7 +106,7 @@ const getAllComments = TryCatch(
     }
 
     return SUCCESS(res, 200, "Comments fetched successfully", {
-      data: { comments, pagination: { total, page, limit } },
+      data: { comments, pagination: { total: total / limit, page, limit } },
     });
   }
 );
