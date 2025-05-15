@@ -113,7 +113,7 @@ const getPosts = TryCatch(
               },
             },
           ],
-          as: "user",
+          as: "userId",
         },
       },
       {
@@ -151,7 +151,7 @@ const getPosts = TryCatch(
         },
       },
       {
-        $unwind: "$user",
+        $unwind: "$userId",
       },
       {
         $project: {
