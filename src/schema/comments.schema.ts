@@ -1,6 +1,7 @@
-import Joi from "joi";
+import Joi, { number } from "joi";
 import {
   ObjectIdValidation,
+  numberValidation,
   specificNumberValidation,
   specificStringValidation,
   stringValidation,
@@ -19,6 +20,8 @@ const getAllCommentsSchema = {
   query: Joi.object({
     id: ObjectIdValidation("ID"),
     type: specificStringValidation("Type", postType),
+    page: numberValidation("Page", false),
+    limit: numberValidation("Limit", false),
   }),
 };
 
