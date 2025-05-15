@@ -476,9 +476,9 @@ const updateUser = TryCatch(
       "formUpload",
     ]);
 
-    if (files.profileImage?.length) user.profileImage = files.profileImage[0];
-    if (files.licenseImage?.length) user.licenseImage = files.licenseImage[0];
-    if (files.additionalPhotos?.length) {
+    if (files?.profileImage?.length) user.profileImage = files.profileImage[0];
+    if (files?.licenseImage?.length) user.licenseImage = files.licenseImage[0];
+    if (files?.additionalPhotos?.length) {
       additionalPhotosToBeRemoved.forEach((photo: string) => {
         const index = user.additionalPhotos.indexOf(photo);
         if (index > -1) {
@@ -486,15 +486,15 @@ const updateUser = TryCatch(
         }
       });
 
-      if (user.additionalPhotos.length + files.additionalPhotos.length > 5) {
+      if (user.additionalPhotos.length + files?.additionalPhotos?.length > 5) {
         return next(new ErrorHandler("Additional Photos limit exceed", 400));
       }
 
-      files.additionalPhotos.forEach((photo: string) => {
+      files?.additionalPhotos.forEach((photo: string) => {
         user.additionalPhotos.push(photo);
       });
     }
-    if (files.formUpload?.length) {
+    if (files?.formUpload?.length) {
       formUploadToBeRemoved.forEach((photo: string) => {
         const index = user.formUpload.indexOf(photo);
         if (index > -1) {
@@ -502,11 +502,11 @@ const updateUser = TryCatch(
         }
       });
 
-      if (user.formUpload.length + files.formUpload.length > 2) {
+      if (user.formUpload.length + files?.formUpload.length > 2) {
         return next(new ErrorHandler("Form Upload limit exceed", 400));
       }
 
-      files.formUpload.forEach((photo: string) => {
+      files?.formUpload.forEach((photo: string) => {
         user.formUpload.push(photo);
       });
     }
