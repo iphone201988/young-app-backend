@@ -33,6 +33,7 @@ import {
 import { userRole } from "../utils/enums";
 import OTPAuth from "otpauth";
 import { UserModel } from "../../types/Database/types";
+import mongoose from "mongoose";
 
 const registerUser = TryCatch(
   async (
@@ -702,6 +703,54 @@ const getUsers = TryCatch(
   }
 );
 
+const getLatestUsers = TryCatch(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const { userId } = req;
+
+    const users = await User.aggregate([
+      {
+        $match: {
+          _id: { $ne: new mongoose.Types.ObjectId(userId) },
+          isDeleted: false,
+        },
+      },
+      {
+        $sort: { createdAt: -1 },
+      },
+      {
+        $group: {
+          _id: "$role",
+          users: { $push: "$$ROOT" },
+        },
+      },
+      {
+        $project: {
+          users: { $slice: ["$users", 5] },
+        },
+      },
+      { $unwind: "$users" },
+      {
+        $replaceRoot: { newRoot: "$users" },
+      },
+      {
+        $project: {
+          firstName: 1,
+          lastName: 1,
+          username: 1,
+          profileImage: 1,
+          role: 1,
+        },
+      },
+    ]);
+
+    return SUCCESS(res, 200, "Users fetched successfully", {
+      data: {
+        users,
+      },
+    });
+  }
+);
+
 export default {
   registerUser,
   verifyOtp,
@@ -717,4 +766,5 @@ export default {
   getUserProfile,
   updateCustomers,
   getUsers,
+  getLatestUsers
 };

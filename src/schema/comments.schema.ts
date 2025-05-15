@@ -2,7 +2,6 @@ import Joi, { number } from "joi";
 import {
   ObjectIdValidation,
   numberValidation,
-  specificNumberValidation,
   specificStringValidation,
   stringValidation,
 } from ".";

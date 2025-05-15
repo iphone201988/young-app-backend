@@ -120,4 +120,10 @@ userRoutes.get(
   userController.getUsers
 );
 
+userRoutes.get(
+  "/getLatestUsers",
+  authenticationMiddleware,
+  userController.getLatestUsers
+);
+
 export default userRoutes;
