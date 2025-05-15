@@ -153,7 +153,12 @@ const likeDislikeComment = TryCatch(
     return SUCCESS(
       res,
       200,
-      `Comment ${isLiked ? "disliked" : "liked"} successfully`
+      `Comment ${isLiked ? "disliked" : "liked"} successfully`,
+      {
+        data: {
+          commentId: id,
+        },
+      }
     );
   }
 );
