@@ -76,6 +76,8 @@ export const filterUser = (user: UserModel) => {
     __v: undefined,
     createdAt: undefined,
     updatedAt: undefined,
+    savedPosts: undefined,
+    savedVaults: undefined,
   };
 };
 
