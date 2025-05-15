@@ -10,6 +10,7 @@ import {
   GetCommentsRequest,
 } from "../../types/API/Comment/types";
 import { CommentsModel } from "../../types/Database/types";
+import mongoose from "mongoose";
 
 const addComment = TryCatch(
   async (
@@ -82,44 +83,77 @@ const getAllComments = TryCatch(
     limit = Number(limit);
     const skip = (page - 1) * limit;
 
-    let comments: any, total: number;
+    let comments: any;
+
+    const query: any = {};
 
     if (type == "post") {
       const post = await getPostById(id);
-
-      comments = await Comments.find({ postId: id })
-        .populate("userId", "_id firstName lastName profileImage")
-        .select("-updatedAt -__v")
-        .skip(skip)
-        .limit(limit)
-        .sort({ createdAt: -1 });
-      total = await Comments.countDocuments({ postId: id });
+      query.postId = new mongoose.Types.ObjectId(id);
     }
 
     if (type == "vault") {
       const vault = await getVaultById(id);
-      comments = await Comments.find({ vaultId: id })
-        .populate("userId", "_id firstName lastName profileImage")
-        .select("-updatedAt -__v -likedBy")
-        .skip(skip)
-        .limit(limit)
-        .sort({ createdAt: -1 });
-      total = await Comments.countDocuments({ vaultId: id });
+      query.vaultId = new mongoose.Types.ObjectId(id);
     }
 
-    comments = comments.map((comment: any) => {
-      if (comment?.likedBy?.includes(userId)) {
-        return {
-          ...comment.toObject(),
-          isLiked: true,
-        };
-      } else {
-        return {
-          ...comment.toObject(),
-          isLiked: false,
-        };
-      }
-    });
+    const total = await Comments.countDocuments(query);
+
+    comments = await Comments.aggregate([
+      {
+        $match: query,
+      },
+      { $skip: skip },
+      { $limit: limit },
+      {
+        $lookup: {
+          from: "users",
+          let: { userId: "$userId" },
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $eq: ["$_id", "$$userId"],
+                },
+              },
+            },
+            {
+              $project: {
+                _id: 1,
+                firstName: 1,
+                lastName: 1,
+                profileImage: 1,
+              },
+            },
+          ],
+          as: "userId",
+        },
+      },
+      {
+        $unwind: "$userId",
+      },
+      {
+        $addFields: {
+          likesCount: { $size: "$likedBy" },
+          isLiked: {
+            $cond: {
+              if: {
+                $in: [new mongoose.Types.ObjectId(userId), "$likedBy"],
+              },
+              then: true,
+              else: false,
+            },
+          },
+        },
+      },
+      {
+        $project: {
+          updatedAt: 0,
+          __v: 0,
+          likedBy: 0,
+        },
+      },
+    ]);
 
     return SUCCESS(res, 200, "Comments fetched successfully", {
       data: {
