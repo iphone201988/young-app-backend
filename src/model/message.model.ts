@@ -5,6 +5,7 @@ const messageSchema = new Schema(
     chatId: { type: Schema.Types.ObjectId, ref: "chat" },
     senderId: { type: Schema.Types.ObjectId, ref: "user" },
     message: { type: String },
+    isRead: { type: Boolean, default: false },
     isDeleted: { type: Boolean, default: false },
   },
   { timestamps: true }

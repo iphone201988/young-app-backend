@@ -33,6 +33,7 @@
     "otp-generator": "^4.0.1",
     "otpauth": "^9.4.0",
     "qrcode": "^1.5.4",
+    "socket.io": "^4.8.1",
     "typescript": "^5.7.2"
   },
   "devDependencies": {

@@ -118,6 +118,9 @@ export interface PostModel extends Document {
   isPublished: boolean;
   isDeleted: boolean;
   likedBy: any[];
+  reSharedBy: any;
+  reSharedPostId: any;
+
   createdAt: Date;
   updatedAt: Date;
 }

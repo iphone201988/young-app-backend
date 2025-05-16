@@ -12,6 +12,7 @@ import Comments from "../model/comments.model";
 import mongoose from "mongoose";
 import User from "../model/user.model";
 import { postType } from "../utils/enums";
+import ErrorHandler from "../utils/ErrorHandler";
 
 const createPost = TryCatch(
   async (
@@ -457,6 +458,39 @@ const getTrendingTopics = TryCatch(
   }
 );
 
+const reSharePost = TryCatch(
+  async (req: Request<PostIdRequest>, res: Response, next: NextFunction) => {
+    const { userId } = req;
+    const { postId: reSharedPostId } = req.params;
+
+    const originalPost = await Post.findById(reSharedPostId).lean();
+
+    if (!originalPost || originalPost.isDeleted)
+      return next(new ErrorHandler("Post not found", 400));
+
+    if (originalPost.userId == userId)
+      return next(new ErrorHandler("You can't reshare this post", 400));
+
+    const isAlreadyShared = await Post.find({
+      reSharedPostId,
+      reSharedBy: userId,
+    });
+
+    if (isAlreadyShared)
+      return next(new ErrorHandler("You have already reshared this post", 400));
+
+    const { _id, ...clonedData } = originalPost;
+
+    await Post.create({
+      ...clonedData,
+      reSharedPostId,
+      reSharedBy: userId,
+    });
+
+    return SUCCESS(res, 200, "Post reshared successfully");
+  }
+);
+
 export default {
   createPost,
   getPosts,
@@ -467,4 +501,5 @@ export default {
   getSavedPosts,
   getPostDetailsById,
   getTrendingTopics,
+  reSharePost,
 };

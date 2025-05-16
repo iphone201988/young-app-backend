@@ -24,6 +24,15 @@ const postSchema = new Schema<PostModel>(
         ref: "user",
       },
     ],
+
+    reSharedBy: {
+      type: Schema.Types.ObjectId,
+      ref: "user",
+    },
+    reSharedPostId: {
+      type: Schema.Types.ObjectId,
+      ref: "post",
+    },
   },
   {
     timestamps: true,

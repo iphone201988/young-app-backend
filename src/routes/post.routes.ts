@@ -77,4 +77,11 @@ postRoutes.get(
   postController.getPostDetailsById
 );
 
+postRoutes.put(
+  "/reshare/:postId",
+  authenticationMiddleware,
+  validate(postSchema.commonSchema),
+  postController.reSharePost
+);
+
 export default postRoutes;
