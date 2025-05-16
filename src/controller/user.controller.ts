@@ -574,7 +574,7 @@ const updateUser = TryCatch(
       if (yearsEmployed) user.yearsEmployed = yearsEmployed;
       if (salaryRange) user.salaryRange = salaryRange;
       if (riskTolerance) user.riskTolerance = riskTolerance;
-      if (topicsOfInterest) user.topicsOfInterest = topicsOfInterest;
+      if (topicsOfInterest) user.topicsOfInterest = topicsOfInterest.split(",");
       if (goals) user.goals = goals;
       if (stockInvestments) user.stockInvestments = stockInvestments;
       if (specificStockSymbols)

@@ -79,7 +79,7 @@ export interface UserModel extends Document {
   yearsEmployed: string;
   salaryRange: string;
   riskTolerance: string;
-  topicsOfInterest: string;
+  topicsOfInterest: string[];
   goals: string;
   stockInvestments: string;
   specificStockSymbols: string;

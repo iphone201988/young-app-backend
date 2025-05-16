@@ -37,7 +37,7 @@ const memberOtherFields = {
   yearsEmployed: { type: String },
   salaryRange: { type: String },
   riskTolerance: { type: String },
-  topicsOfInterest: { type: String },
+  topicsOfInterest: [{ type: String }],
   goals: { type: String },
   stockInvestments: { type: String },
   specificStockSymbols: { type: String },
