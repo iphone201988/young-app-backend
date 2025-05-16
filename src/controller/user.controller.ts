@@ -520,7 +520,7 @@ const updateUser = TryCatch(
     if (state) user.state = state;
     if (race) user.race = race;
     if (gender) user.gender = gender;
-    if (ageRange) user.ageRange = ageRange;
+    if (ageRange) user.age = ageRange;
     if (yearFounded) user.yearFounded = yearFounded;
     if (about) user.about = about;
     if (fairnessForward) user.fairnessForward = fairnessForward;
@@ -530,6 +530,7 @@ const updateUser = TryCatch(
       if (areaOfExpertise) user.areaOfExpertise = areaOfExpertise;
       if (businessRevenue) user.businessRevenue = businessRevenue;
       if (investors) user.investors = investors;
+      if (yearFounded) user.yearFounded = yearFounded;
     }
 
     if (user.role == userRole.INVESTOR) {
@@ -555,7 +556,7 @@ const updateUser = TryCatch(
     }
 
     if (user.role == userRole.FINANCIAL_ADVISOR) {
-      if (ageRange) user.ageRange = ageRange;
+      if (ageRange) user.age = ageRange;
       if (educationLevel) user.educationLevel = educationLevel;
       if (crdNumber) user.crdNumber = crdNumber;
       if (certificates) user.certificates = certificates;
