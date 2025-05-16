@@ -304,6 +304,7 @@ const verify2FA = TryCatch(
       data: {
         token,
         name: user.firstName + " " + user.lastName,
+        role: user.role,
       },
     });
   }
@@ -766,5 +767,5 @@ export default {
   getUserProfile,
   updateCustomers,
   getUsers,
-  getLatestUsers
+  getLatestUsers,
 };
