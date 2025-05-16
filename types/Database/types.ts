@@ -8,6 +8,7 @@ export interface UserModel extends Document {
   email: string;
   countryCode: string;
   phone: string;
+  yearFounded: string;
   password: string;
   role: string;
   licenseImage: string;

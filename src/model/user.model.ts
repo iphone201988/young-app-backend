@@ -72,6 +72,7 @@ const userSchema = new Schema<UserModel>(
     age: { type: String },
     gender: { type: String },
     maritalStatus: { type: String },
+    yearFounded: { type: String },
     children: { type: String },
     homeOwnerShip: { type: String },
     objective: { type: String },
