@@ -74,7 +74,7 @@ export const filterUser = (user: UserModel) => {
     deviceToken: undefined,
     deviceType: undefined,
     __v: undefined,
-    createdAt: undefined,
+    // createdAt: undefined,
     updatedAt: undefined,
     savedPosts: undefined,
     savedVaults: undefined,
