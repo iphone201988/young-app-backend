@@ -7,6 +7,7 @@ import {
 } from "../../types/API/Ratings/types";
 import ErrorHandler from "../utils/ErrorHandler";
 import { ratingsType } from "../utils/enums";
+import mongoose from "mongoose";
 
 const giveRatings = TryCatch(
   async (
@@ -53,17 +54,56 @@ const getRatings = TryCatch(
   ) => {
     const { id, type } = req.query;
 
-    const query: any = {};
-    if (type == ratingsType.USER) query.receiverId = id;
-    if (type == ratingsType.SHARE) query.postId = id;
-    if (type == ratingsType.VAULT) query.vaultId = id;
+    const query: any = { type };
+    if (type == ratingsType.USER)
+      query.receiverId = new mongoose.Types.ObjectId(id);
 
-    const ratings = await Ratings.find(query).select("ratings");
+    if (type == ratingsType.SHARE)
+      query.postId = new mongoose.Types.ObjectId(id);
+
+    if (type == ratingsType.VAULT)
+      query.vaultId = new mongoose.Types.ObjectId(id);
+
+    const count = await Ratings.countDocuments(query);
+
+    const ratings = await Ratings.aggregate([
+      { $match: query },
+      {
+        $group: {
+          _id: "$ratings",
+          count: { $sum: 1 },
+        },
+      },
+    ]);
+
+    const ratingsCount: Record<number, number> = {
+      1: 0,
+      2: 0,
+      3: 0,
+      4: 0,
+      5: 0,
+    };
+
+    let sum = 0;
+    let totalCount = 0;
+
+    ratings.forEach((item) => {
+      const rating = item._id;
+      const count = item.count;
+
+      if (ratingsCount.hasOwnProperty(rating)) {
+        ratingsCount[rating] = count;
+        sum += rating * count;
+        totalCount += count;
+      }
+    });
+
+    // Calculate average and cap it at 5
+    const averageRating =
+      totalCount > 0 ? Math.min(5, +(sum / totalCount).toFixed(2)) : 0;
 
     return SUCCESS(res, 200, "Ratings fetched successfully", {
-      data: {
-        ratings,
-      },
+      data: { totalCount, ratingsCount, averageRating },
     });
   }
 );
