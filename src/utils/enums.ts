@@ -59,3 +59,9 @@ export const eventType = {
   GENERAL_EVENTS_BY_ADMIN: "general_events_by_admin",
   OWN_EVENTS: "own_events",
 };
+
+export const ratingsType = {
+  USER: "user",
+  SHARE: "share",
+  VAULT: "vault",
+};

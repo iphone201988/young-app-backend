@@ -126,4 +126,18 @@ userRoutes.get(
   userController.getLatestUsers
 );
 
+userRoutes.post(
+  "/contactUs",
+  authenticationMiddleware,
+  upload.fields([
+    {
+      name: "file",
+      maxCount: 1,
+    },
+  ]),
+  validateFiles(["file"]),
+  validate(userSchema.contactUsSchema),
+  userController.contactUs
+);
+
 export default userRoutes;

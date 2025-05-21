@@ -11,7 +11,7 @@ import { getPostById } from "../services/post.services";
 import Comments from "../model/comments.model";
 import mongoose from "mongoose";
 import User from "../model/user.model";
-import { postType } from "../utils/enums";
+import { postType, ratingsType } from "../utils/enums";
 import ErrorHandler from "../utils/ErrorHandler";
 
 const createPost = TryCatch(
@@ -125,10 +125,62 @@ const getPosts = TryCatch(
           as: "comments",
         },
       },
+      // {
+      //   $lookup: {
+      //     from: "ratings",
+      //     localField: "_id",
+      //     foreignField: "postId",
+      //     as: "ratings",
+      //   },
+      // },
+      {
+        $lookup: {
+          from: "ratings",
+          let: { id: "$_id" },
+          pipeline: [
+            {
+              $match: {
+                $expr: { $eq: ["$postId", "$$id"] },
+                type: ratingsType.SHARE,
+                senderId: new mongoose.Types.ObjectId(userId),
+              },
+            },
+            {
+              $project: {
+                ratings: 1,
+                _id: 1,
+              },
+            },
+          ],
+          as: "ratings",
+        },
+      },
+      { $unwind: "$ratings" },
       {
         $addFields: {
           commentsCount: { $size: "$comments" },
           likesCount: { $size: "$likedBy" },
+
+          // userRatingObj: {
+          //   $first: {
+          //     $filter: {
+          //       input: "$ratings",
+          //       as: "rating",
+          //       cond: {
+          //         $and: [
+          //           {
+          //             $eq: [
+          //               "$$rating.senderId",
+          //               new mongoose.Types.ObjectId(userId),
+          //             ],
+          //           },
+          //           { $eq: ["$$rating.type", ratingsType.SHARE] },
+          //         ],
+          //       },
+          //     },
+          //   },
+          // },
+
           isSaved: {
             $cond: {
               if: {
@@ -471,7 +523,7 @@ const reSharePost = TryCatch(
     if (originalPost.userId == userId)
       return next(new ErrorHandler("You can't reshare this post", 400));
 
-    const isAlreadyShared = await Post.find({
+    const isAlreadyShared = await Post.findOne({
       reSharedPostId,
       reSharedBy: userId,
     });

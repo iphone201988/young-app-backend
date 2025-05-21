@@ -132,3 +132,10 @@ export type GetUsersRequest = {
   page?: number;
   limit?: number;
 };
+
+export type ContactUsRequest = {
+  subject: string;
+  name: string;
+  company: string;
+  email: string;
+};

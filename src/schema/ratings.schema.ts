@@ -1,10 +1,18 @@
 import Joi from "joi";
-import { ObjectIdValidation, numberValidation } from ".";
+import {
+  ObjectIdValidation,
+  numberValidation,
+  specificStringValidation,
+} from ".";
+import { ratingsType } from "../utils/enums";
 
 const giveRatingsSchema = {
   body: Joi.object({
-    receiverId: ObjectIdValidation("Receiver ID"),
+    type: specificStringValidation("Type", ratingsType),
     ratings: numberValidation("Ratings"),
+    receiverId: ObjectIdValidation("Receiver ID", false),
+    postId: ObjectIdValidation("Post ID", false),
+    vaultId: ObjectIdValidation("Vault ID", false),
   }),
 };
 const getRatingsSchema = {

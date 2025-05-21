@@ -165,3 +165,51 @@ export interface EventsMModel extends Document {
   createdAt: Date;
   updatedAt: Date;
 }
+
+export interface ReportsModel extends Document {
+  userId: any;
+  reporterUserId: any;
+  reason: string;
+  additionalDetails: string;
+  screenshots: string[];
+
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface ContactUsModel extends Document {
+  userId: any;
+  subject: string;
+  name: string;
+  company: string;
+  email: string;
+  file: string;
+
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface AdvertiseModel extends Document {
+  userId: any;
+  name: string;
+  company: string;
+  email: string;
+  website: string;
+  plan: string;
+  file: string;
+
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface RatingsModel extends Document {
+  senderId: any;
+  receiverId: any;
+  ratings: number;
+  type: string;
+  postId: any;
+  vaultId: any;
+
+  createdAt: Date;
+  updatedAt: Date;
+}

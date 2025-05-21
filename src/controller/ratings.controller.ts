@@ -3,6 +3,7 @@ import { SUCCESS, TryCatch } from "../utils/helper";
 import Ratings from "../model/ratings.model";
 import { GiveRatingsRequest } from "../../types/API/Ratings/types";
 import ErrorHandler from "../utils/ErrorHandler";
+import { ratingsType } from "../utils/enums";
 
 const giveRatings = TryCatch(
   async (
@@ -11,23 +12,24 @@ const giveRatings = TryCatch(
     next: NextFunction
   ) => {
     const { userId } = req;
-    const { ratings, receiverId } = req.body;
+    const { ratings, receiverId, type, postId, vaultId } = req.body;
 
-    const rating = await Ratings.findOne({
-      senderId: userId,
-      receiverId,
-    });
+    const query: any = { senderId: userId, type };
+    if (receiverId && type == ratingsType.USER) query.receiverId = receiverId;
+    if (postId && type == ratingsType.SHARE) query.postId = postId;
+    if (vaultId && type == ratingsType.VAULT) query.vaultId = vaultId;
+
+    const rating = await Ratings.findOne(query);
 
     if (rating)
       return next(
-        new ErrorHandler("You have already given rating to this profile", 400)
+        new ErrorHandler(
+          `You have already given rating to this ${type.toUpperCase()}`,
+          400
+        )
       );
 
-    await Ratings.create({
-      senderId: userId,
-      receiverId,
-      ratings,
-    });
+    await Ratings.create({ ratings, ...query });
 
     return SUCCESS(res, 201, "Ratings added successfully");
   }

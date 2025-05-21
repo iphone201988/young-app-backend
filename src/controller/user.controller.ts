@@ -21,6 +21,7 @@ import {
 import {
   ChangePasswordType,
   CompleteRegistrationRequest,
+  ContactUsRequest,
   FollowUnfollowRequest,
   GetUsersRequest,
   LoginUserRequest,
@@ -34,6 +35,8 @@ import { userRole } from "../utils/enums";
 import OTPAuth from "otpauth";
 import { UserModel } from "../../types/Database/types";
 import mongoose from "mongoose";
+import Contact from "../model/contact.model";
+import Ratings from "../model/ratings.model";
 
 const registerUser = TryCatch(
   async (
@@ -638,10 +641,25 @@ const getUserProfile = TryCatch(
     const userId = req.query.userId || user._id;
     const userProfile = await User.findById(userId);
     if (!userProfile) return next(new ErrorHandler("User not found", 404));
+
+    let isRated: any;
+    if (req.query.userId) {
+      isRated = await Ratings.findOne({
+        senderId: user._id,
+        receiverId: req.query.userId,
+      }).select("ratings");
+    }
+
+    const ratings = await Ratings.find({ receiverId: userId }).select(
+      "ratings"
+    );
+
     return SUCCESS(res, 200, "User profile fetched successfully", {
       data: {
         user: {
           ...filterUser(userProfile.toObject()),
+          ratings,
+          isRated: isRated?.ratings,
           customers: userProfile.customers.length,
           followedBy: userProfile.followedBy.length,
           following: userProfile.following.length,
@@ -753,6 +771,30 @@ const getLatestUsers = TryCatch(
   }
 );
 
+const contactUs = TryCatch(
+  async (
+    req: Request<{}, {}, ContactUsRequest>,
+    res: Response,
+    next: NextFunction
+  ) => {
+    const { userId } = req;
+    const { subject, name, company, email } = req.body;
+
+    const files = getFiles(req, ["file"]);
+
+    await Contact.create({
+      userId,
+      name,
+      company,
+      subject,
+      email,
+      file: files.file[0],
+    });
+
+    return SUCCESS(res, 200, "Our team will contact you soon");
+  }
+);
+
 export default {
   registerUser,
   verifyOtp,
@@ -769,4 +811,5 @@ export default {
   updateCustomers,
   getUsers,
   getLatestUsers,
+  contactUs,
 };

@@ -185,6 +185,15 @@ const getUsersSchema = {
   }),
 };
 
+const contactUsSchema = {
+  body: Joi.object({
+    subject: stringValidation("Subject"),
+    name: stringValidation("Name"),
+    company: stringValidation("Company"),
+    email: emailValidation(),
+  }),
+};
+
 export default {
   registerSchema,
   loginUserSchema,
@@ -198,4 +207,5 @@ export default {
   getUserProfileSchema,
   updateCustomersSchema,
   getUsersSchema,
+  contactUsSchema
 };
