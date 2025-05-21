@@ -1,7 +1,10 @@
 export type GiveRatingsRequest = {
   ratings: number;
-  receiverId: string;
   type: string;
-  postId?: string;
-  vaultId?: string;
+  id: string;
+};
+
+export type GetRatingsRequest = {
+  type: string;
+  id: string;
 };

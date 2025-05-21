@@ -10,14 +10,13 @@ const giveRatingsSchema = {
   body: Joi.object({
     type: specificStringValidation("Type", ratingsType),
     ratings: numberValidation("Ratings"),
-    receiverId: ObjectIdValidation("Receiver ID", false),
-    postId: ObjectIdValidation("Post ID", false),
-    vaultId: ObjectIdValidation("Vault ID", false),
+    id: ObjectIdValidation("ID"),
   }),
 };
 const getRatingsSchema = {
-  params: Joi.object({
-    receiverId: ObjectIdValidation("Receiver ID"),
+  query: Joi.object({
+    id: ObjectIdValidation("Receiver ID"),
+    type: specificStringValidation("Type", ratingsType),
   }),
 };
 

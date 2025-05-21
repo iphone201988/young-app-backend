@@ -14,7 +14,7 @@ ratingsRoutes.post(
 );
 
 ratingsRoutes.get(
-  "/:receiverId",
+  "/",
   authenticationMiddleware,
   validate(ratingsSchema.getRatingsSchema),
   ratingsController.getRatings

@@ -1,7 +1,10 @@
 import { NextFunction, Request, Response } from "express";
 import { SUCCESS, TryCatch } from "../utils/helper";
 import Ratings from "../model/ratings.model";
-import { GiveRatingsRequest } from "../../types/API/Ratings/types";
+import {
+  GetRatingsRequest,
+  GiveRatingsRequest,
+} from "../../types/API/Ratings/types";
 import ErrorHandler from "../utils/ErrorHandler";
 import { ratingsType } from "../utils/enums";
 
@@ -12,12 +15,12 @@ const giveRatings = TryCatch(
     next: NextFunction
   ) => {
     const { userId } = req;
-    const { ratings, receiverId, type, postId, vaultId } = req.body;
+    const { ratings, type, id } = req.body;
 
     const query: any = { senderId: userId, type };
-    if (receiverId && type == ratingsType.USER) query.receiverId = receiverId;
-    if (postId && type == ratingsType.SHARE) query.postId = postId;
-    if (vaultId && type == ratingsType.VAULT) query.vaultId = vaultId;
+    if (type == ratingsType.USER) query.receiverId = id;
+    if (type == ratingsType.SHARE) query.postId = id;
+    if (type == ratingsType.VAULT) query.vaultId = id;
 
     const rating = await Ratings.findOne(query);
 
@@ -36,10 +39,19 @@ const giveRatings = TryCatch(
 );
 
 const getRatings = TryCatch(
-  async (req: Request, res: Response, next: NextFunction) => {
-    const { receiverId } = req.params;
+  async (
+    req: Request<{}, {}, {}, GetRatingsRequest>,
+    res: Response,
+    next: NextFunction
+  ) => {
+    const { id, type } = req.query;
 
-    const ratings = await Ratings.find({ receiverId }).select("ratings");
+    const query: any = {};
+    if (type == ratingsType.USER) query.receiverId = id;
+    if (type == ratingsType.SHARE) query.postId = id;
+    if (type == ratingsType.VAULT) query.vaultId = id;
+
+    const ratings = await Ratings.find(query).select("ratings");
 
     return SUCCESS(res, 200, "Ratings fetched successfully", {
       data: {
