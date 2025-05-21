@@ -105,6 +105,7 @@ const useSockets = (
       if (receiverSocketId) {
         io.to(receiverSocketId).emit("newMessage", newMessage);
       }
+      socket.emit("newMessage", newMessage);
     });
 
     socket.on("disconnect", () => {

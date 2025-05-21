@@ -5,7 +5,6 @@ import {
   GetRatingsRequest,
   GiveRatingsRequest,
 } from "../../types/API/Ratings/types";
-import ErrorHandler from "../utils/ErrorHandler";
 import { ratingsType } from "../utils/enums";
 import mongoose from "mongoose";
 
