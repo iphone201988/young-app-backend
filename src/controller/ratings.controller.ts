@@ -34,7 +34,9 @@ const giveRatings = TryCatch(
 
     await Ratings.create({ ratings, ...query });
 
-    return SUCCESS(res, 201, "Ratings added successfully");
+    return SUCCESS(res, 201, "Ratings added successfully", {
+      data: { ratings },
+    });
   }
 );
 
