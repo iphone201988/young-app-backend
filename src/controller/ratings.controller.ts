@@ -24,15 +24,20 @@ const giveRatings = TryCatch(
 
     const rating = await Ratings.findOne(query);
 
-    if (rating)
-      return next(
-        new ErrorHandler(
-          `You have already given rating to this ${type.toUpperCase()}`,
-          400
-        )
-      );
+    if (rating) {
+      rating.ratings = ratings;
+      await rating.save();
+    } else {
+      await Ratings.create({ ratings, ...query });
+    }
 
-    await Ratings.create({ ratings, ...query });
+    // if (rating)
+    //   return next(
+    //     new ErrorHandler(
+    //       `You have already given rating to this ${type.toUpperCase()}`,
+    //       400
+    //     )
+    //   );
 
     return SUCCESS(res, 201, "Ratings added successfully", {
       data: { ratings },
