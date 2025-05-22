@@ -17,7 +17,7 @@ const createEvent = TryCatch(
     const { title, topic, description, scheduledDate, type } = req.body;
     const files = getFiles(req, ["file"]);
 
-    await Events.create({
+    const event = await Events.create({
       userId,
       title,
       topic,
@@ -27,7 +27,7 @@ const createEvent = TryCatch(
       file: files?.file[0],
     });
 
-    return SUCCESS(res, 201, "Event created successfully");
+    return SUCCESS(res, 201, "Event created successfully", { data: { event } });
   }
 );
 
