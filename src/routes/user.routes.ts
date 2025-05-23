@@ -98,6 +98,7 @@ userRoutes.put(
 );
 
 userRoutes.get("/logout", authenticationMiddleware, userController.logout);
+userRoutes.put("/deleteAccount", authenticationMiddleware, userController.deleteAccount);
 
 userRoutes.get(
   "/getUserProfile",
