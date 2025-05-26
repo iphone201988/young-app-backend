@@ -409,7 +409,7 @@ const getSavedPosts = TryCatch(
               },
             },
           ],
-          as: "user",
+          as: "userId",
         },
       },
       {
@@ -464,7 +464,7 @@ const getSavedPosts = TryCatch(
         },
       },
       {
-        $unwind: "$user",
+        $unwind: "$userId",
       },
       {
         $project: {
