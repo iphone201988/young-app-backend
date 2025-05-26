@@ -86,6 +86,8 @@ const getRatings = TryCatch(
     let sum = 0;
     let totalCount = 0;
 
+    console.log("ratings", ratings);
+
     ratings.forEach((item) => {
       const rating = item._id;
       const count = item.count;

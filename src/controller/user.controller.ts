@@ -378,19 +378,20 @@ const followUnfollowUser = TryCatch(
     const { user } = req;
     const { userId } = req.params;
     const userToFollow = await getUserById(userId);
-    const isFollowing = userToFollow.followedBy.includes(userToFollow._id);
+    const isFollowing = userToFollow.followers.includes(user._id.toString());
+    console.log("isFollowing::", user._id, userToFollow.followers);
 
     if (isFollowing) {
-      userToFollow.followedBy = userToFollow.followedBy.filter(
-        (id: string) => id != user._id
+      userToFollow.followers = userToFollow.followers.filter(
+        (id: string) => id.toString() != user._id.toString()
       );
 
       user.following = user.following.filter(
-        (id: string) => id != userToFollow._id
+        (id: string) => id.toString() != userToFollow._id.toString()
       );
     } else {
       user.following.push(userToFollow._id);
-      userToFollow.followedBy.push(user._id);
+      userToFollow.followers.push(user._id);
     }
 
     await Promise.all([user.save(), userToFollow.save()]);
@@ -398,7 +399,7 @@ const followUnfollowUser = TryCatch(
     return SUCCESS(
       res,
       200,
-      `User ${isFollowing ? "unfollowed" : "followed"} successfully`
+      `User ${isFollowing ? "Unfollowed" : "followed"} successfully`
     );
   }
 );
@@ -653,6 +654,8 @@ const getUserProfile = TryCatch(
     const ratings = await Ratings.find({ receiverId: userId }).select(
       "ratings"
     );
+    console.log("user.followers::", userProfile.followers, user._id);
+    const isFollowed = userProfile.followers.includes(user._id);
 
     return SUCCESS(res, 200, "User profile fetched successfully", {
       data: {
@@ -660,8 +663,9 @@ const getUserProfile = TryCatch(
           ...filterUser(userProfile.toObject()),
           ratings,
           isRated: isRated?.ratings,
+          isFollowed,
           customers: userProfile.customers.length,
-          followedBy: userProfile.followedBy.length,
+          followers: userProfile.followers.length,
           following: userProfile.following.length,
         },
       },

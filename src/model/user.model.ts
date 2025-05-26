@@ -101,7 +101,7 @@ const userSchema = new Schema<UserModel>(
       email: { type: String },
     },
     following: [{ type: Schema.Types.ObjectId, ref: "user" }],
-    followedBy: [{ type: Schema.Types.ObjectId, ref: "user" }],
+    followers: [{ type: Schema.Types.ObjectId, ref: "user" }],
     customers: [{ type: Schema.Types.ObjectId, ref: "user" }],
     ...otherCommonFields,
     ...startupOtherFields,
