@@ -656,6 +656,7 @@ const getUserProfile = TryCatch(
     );
     console.log("user.followers::", userProfile.followers, user._id);
     const isFollowed = userProfile.followers.includes(user._id);
+    const isConnectedWithProfile = userProfile.customers.includes(user._id);
 
     return SUCCESS(res, 200, "User profile fetched successfully", {
       data: {
@@ -664,6 +665,7 @@ const getUserProfile = TryCatch(
           ratings,
           isRated: isRated?.ratings,
           isFollowed,
+          isConnectedWithProfile,
           customers: userProfile.customers.length,
           followers: userProfile.followers.length,
           following: userProfile.following.length,
