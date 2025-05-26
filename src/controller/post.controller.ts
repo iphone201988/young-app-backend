@@ -163,6 +163,11 @@ const getPosts = TryCatch(
         },
       },
       {
+        $set: {
+          ratings: "$ratings.ratings",
+        },
+      },
+      {
         $addFields: {
           commentsCount: { $size: "$comments" },
           likesCount: { $size: "$likedBy" },
@@ -447,6 +452,11 @@ const getSavedPosts = TryCatch(
         $unwind: {
           path: "$ratings",
           preserveNullAndEmptyArrays: true,
+        },
+      },
+      {
+        $set: {
+          ratings: "$ratings.ratings",
         },
       },
       {
