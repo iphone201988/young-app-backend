@@ -13,6 +13,7 @@ import mongoose from "mongoose";
 import User from "../model/user.model";
 import { postType, ratingsType } from "../utils/enums";
 import ErrorHandler from "../utils/ErrorHandler";
+import Ratings from "../model/ratings.model";
 
 const createPost = TryCatch(
   async (
@@ -158,8 +159,8 @@ const getPosts = TryCatch(
       {
         $unwind: {
           path: "$ratings",
-          preserveNullAndEmptyArrays: true
-        }
+          preserveNullAndEmptyArrays: true,
+        },
       },
       {
         $addFields: {
@@ -445,8 +446,8 @@ const getSavedPosts = TryCatch(
       {
         $unwind: {
           path: "$ratings",
-          preserveNullAndEmptyArrays: true
-        }
+          preserveNullAndEmptyArrays: true,
+        },
       },
       {
         $addFields: {
@@ -482,7 +483,7 @@ const getSavedPosts = TryCatch(
     ]);
 
     return SUCCESS(res, 200, "Posts fetched successfully", {
-      data: {posts},
+      data: { posts },
       pagination: {
         total: total[0]?.count || 0,
         page: Number(page),
@@ -494,6 +495,7 @@ const getSavedPosts = TryCatch(
 
 const getPostDetailsById = TryCatch(
   async (req: Request<PostIdRequest>, res: Response, next: NextFunction) => {
+    const { userId } = req;
     const { postId } = req.params;
 
     const post = await Post.findById(postId)
@@ -504,7 +506,15 @@ const getPostDetailsById = TryCatch(
       return res.status(404).json({ message: "Post not found" });
     }
 
-    return SUCCESS(res, 200, "Post fetched successfully", { data: { post } });
+    const ratings = await Ratings.find({
+      type: "share",
+      postId: post._id,
+      senderId: userId,
+    }).select("ratings");
+
+    return SUCCESS(res, 200, "Post fetched successfully", {
+      data: { post: { ...post.toObject(), ratings: ratings[0].ratings } },
+    });
   }
 );
 
