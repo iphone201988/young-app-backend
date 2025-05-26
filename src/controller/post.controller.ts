@@ -523,7 +523,7 @@ const getPostDetailsById = TryCatch(
     }).select("ratings");
 
     return SUCCESS(res, 200, "Post fetched successfully", {
-      data: { post: { ...post.toObject(), ratings: ratings[0].ratings } },
+      data: { post: { ...post.toObject(), ratings: ratings[0]?.ratings } },
     });
   }
 );
