@@ -87,7 +87,7 @@ const getAllComments = TryCatch(
 
     const query: any = {};
 
-    if (type == "post") {
+    if (type == "share") {
       const post = await getPostById(id);
       query.postId = new mongoose.Types.ObjectId(id);
     }
