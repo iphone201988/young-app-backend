@@ -5,8 +5,10 @@ import otpGenerator from "otp-generator";
 import { encode } from "hi-base32";
 import { randomBytes } from "crypto";
 import { UserModel } from "../../types/Database/types";
+import Stripe from "stripe";
 
 export const connectToDB = () => mongoose.connect(process.env.MONGO_URI);
+export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "");
 
 export const TryCatch =
   (func: any) => (req: Request, res: Response, next: NextFunction) =>
