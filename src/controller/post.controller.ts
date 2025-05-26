@@ -155,7 +155,12 @@ const getPosts = TryCatch(
           as: "ratings",
         },
       },
-      { $unwind: "$ratings" },
+      {
+        $unwind: {
+          path: "$ratings",
+          preserveNullAndEmptyArrays: true
+        }
+      },
       {
         $addFields: {
           commentsCount: { $size: "$comments" },
@@ -416,6 +421,34 @@ const getSavedPosts = TryCatch(
         },
       },
       {
+        $lookup: {
+          from: "ratings",
+          let: { id: "$_id" },
+          pipeline: [
+            {
+              $match: {
+                $expr: { $eq: ["$postId", "$$id"] },
+                type: ratingsType.SHARE,
+                senderId: new mongoose.Types.ObjectId(userId),
+              },
+            },
+            {
+              $project: {
+                ratings: 1,
+                _id: 1,
+              },
+            },
+          ],
+          as: "ratings",
+        },
+      },
+      {
+        $unwind: {
+          path: "$ratings",
+          preserveNullAndEmptyArrays: true
+        }
+      },
+      {
         $addFields: {
           commentsCount: { $size: "$comments" },
           likesCount: { $size: "$likedBy" },
@@ -449,7 +482,7 @@ const getSavedPosts = TryCatch(
     ]);
 
     return SUCCESS(res, 200, "Posts fetched successfully", {
-      data: posts,
+      data: {posts},
       pagination: {
         total: total[0]?.count || 0,
         page: Number(page),
