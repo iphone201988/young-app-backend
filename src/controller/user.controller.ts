@@ -8,6 +8,7 @@ import {
   generateOTP,
   generateRandomString,
   getFiles,
+  stripe,
 } from "../utils/helper";
 import ErrorHandler from "../utils/ErrorHandler";
 import User from "../model/user.model";
@@ -481,16 +482,28 @@ const updateUser = TryCatch(
       "formUpload",
     ]);
 
+    console.log("additionalPhotosToBeRemoved::::", additionalPhotosToBeRemoved);
+    console.log("formUploadToBeRemoved::::", formUploadToBeRemoved);
+
+    additionalPhotosToBeRemoved.forEach((photo: string) => {
+      const index = user.additionalPhotos.indexOf(photo);
+      if (index > -1) {
+        user.additionalPhotos.splice(index, 1);
+      }
+    });
+
+    formUploadToBeRemoved.forEach((photo: string) => {
+      const index = user.formUpload.indexOf(photo);
+      console.log("index:::", user.formUpload);
+      if (index > -1) {
+        user.formUpload.splice(index, 1);
+      }
+    });
+
     if (files?.profileImage?.length) user.profileImage = files.profileImage[0];
     if (files?.licenseImage?.length) user.licenseImage = files.licenseImage[0];
-    if (files?.additionalPhotos?.length) {
-      additionalPhotosToBeRemoved.forEach((photo: string) => {
-        const index = user.additionalPhotos.indexOf(photo);
-        if (index > -1) {
-          user.additionalPhotos.splice(index, 1);
-        }
-      });
 
+    if (files?.additionalPhotos?.length) {
       if (user.additionalPhotos.length + files?.additionalPhotos?.length > 5) {
         return next(new ErrorHandler("Additional Photos limit exceed", 400));
       }
@@ -500,13 +513,6 @@ const updateUser = TryCatch(
       });
     }
     if (files?.formUpload?.length) {
-      formUploadToBeRemoved.forEach((photo: string) => {
-        const index = user.formUpload.indexOf(photo);
-        if (index > -1) {
-          user.formUpload.splice(index, 1);
-        }
-      });
-
       if (user.formUpload.length + files?.formUpload.length > 2) {
         return next(new ErrorHandler("Form Upload limit exceed", 400));
       }
