@@ -6,6 +6,7 @@ import commentRoutes from "./comments.routes";
 import eventRoutes from "./events.routes";
 import chatRoutes from "./chat.routes";
 import ratingsRoutes from "./ratings.routes";
+import paymentRoutes from "./payment.routes";
 
 const router = express.Router();
 
@@ -16,5 +17,6 @@ router.use("/comment", commentRoutes);
 router.use("/event", eventRoutes);
 router.use("/chat", chatRoutes);
 router.use("/rating", ratingsRoutes);
+router.use("/payment", paymentRoutes);
 
 export default router;
