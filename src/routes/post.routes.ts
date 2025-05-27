@@ -22,19 +22,19 @@ postRoutes.get(
   postController.getPosts
 );
 
-postRoutes.post(
-  "/addComments",
-  authenticationMiddleware,
-  validate(postSchema.addCommentsSchema),
-  postController.addComments
-);
+// postRoutes.post(
+//   "/addComments",
+//   authenticationMiddleware,
+//   validate(postSchema.addCommentsSchema),
+//   postController.addComments
+// );
 
-postRoutes.get(
-  "/getAllComments/:postId",
-  authenticationMiddleware,
-  validate(postSchema.commonSchema),
-  postController.getAllComments
-);
+// postRoutes.get(
+//   "/getAllComments/:postId",
+//   authenticationMiddleware,
+//   validate(postSchema.commonSchema),
+//   postController.getAllComments
+// );
 
 postRoutes.put(
   "/saveUnsavePost/:postId",
@@ -83,5 +83,7 @@ postRoutes.put(
   validate(postSchema.commonSchema),
   postController.reSharePost
 );
+
+postRoutes.delete("/", authenticationMiddleware, postController.deletePost);
 
 export default postRoutes;

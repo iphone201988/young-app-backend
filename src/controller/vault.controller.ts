@@ -315,44 +315,44 @@ const joinLeaveVault = TryCatch(
   }
 );
 
-const addComment = TryCatch(
-  async (
-    req: Request<{}, {}, AddCommentRequest>,
-    res: Response,
-    next: NextFunction
-  ) => {
-    const { userId } = req;
-    const { vaultId, comment } = req.body;
+// const addComment = TryCatch(
+//   async (
+//     req: Request<{}, {}, AddCommentRequest>,
+//     res: Response,
+//     next: NextFunction
+//   ) => {
+//     const { userId } = req;
+//     const { vaultId, comment } = req.body;
 
-    const vault = await getVaultById(vaultId);
+//     const vault = await getVaultById(vaultId);
 
-    const isMember = vault.members.includes(userId);
+//     const isMember = vault.members.includes(userId);
 
-    if (!isMember)
-      return next(new ErrorHandler("You are not a member of this vault", 403));
+//     if (!isMember)
+//       return next(new ErrorHandler("You are not a member of this vault", 403));
 
-    await Comments.create({ userId, vaultId, comment, type: postType.VAULT });
+//     await Comments.create({ userId, vaultId, comment, type: postType.VAULT });
 
-    return SUCCESS(res, 200, `Comment added successfully`);
-  }
-);
+//     return SUCCESS(res, 200, `Comment added successfully`);
+//   }
+// );
 
-const getAllComments = TryCatch(
-  async (req: Request<VaultIdRequest>, res: Response, next: NextFunction) => {
-    const { vaultId } = req.params;
+// const getAllComments = TryCatch(
+//   async (req: Request<VaultIdRequest>, res: Response, next: NextFunction) => {
+//     const { vaultId } = req.params;
 
-    const vault = await getVaultById(vaultId);
+//     const vault = await getVaultById(vaultId);
 
-    const comments = await Comments.find({ vaultId: vault._id })
-      .populate("userId", "_id firstName lastName profileImage")
-      .select("-updatedAt -__v")
-      .sort({ createdAt: -1 });
+//     const comments = await Comments.find({ vaultId: vault._id })
+//       .populate("userId", "_id firstName lastName profileImage")
+//       .select("-updatedAt -__v")
+//       .sort({ createdAt: -1 });
 
-    return SUCCESS(res, 200, "Comments fetched successfully", {
-      data: { comments },
-    });
-  }
-);
+//     return SUCCESS(res, 200, "Comments fetched successfully", {
+//       data: { comments },
+//     });
+//   }
+// );
 
 const getSavedVaults = TryCatch(
   async (
@@ -502,14 +502,33 @@ const getSavedVaults = TryCatch(
   }
 );
 
+const deleteVault = TryCatch(
+  async (req: Request<VaultIdRequest>, res: Response, next: NextFunction) => {
+    const { userId } = req;
+    const { vaultId } = req.params;
+
+    const vault = await getVaultById(vaultId);
+
+    if (vault.admin.toString() !== userId)
+      return next(
+        new ErrorHandler("You are not authorized to delete this vault", 403)
+      );
+
+    vault.isDeleted = true;
+    await vault.save();
+    return SUCCESS(res, 200, "Vault deleted successfully");
+  }
+);
+
 export default {
   createVault,
   getVaults,
   addRemoveMembersByAdmin,
   getVaultDetailById,
   joinLeaveVault,
-  addComment,
-  getAllComments,
+  // addComment,
+  // getAllComments,
   getSavedVaults,
   saveUnsaveVault,
+  deleteVault,
 };

@@ -6,17 +6,36 @@ import paymentSchema from "../schema/payment.schema";
 
 const paymentRoutes = express.Router();
 
+paymentRoutes.post(
+  "/",
+  authenticationMiddleware,
+  validate(paymentSchema.paymentMethodSchema),
+  paymentController.attachPaymentMethod
+);
+
+paymentRoutes.post(
+  "/buySubscription",
+  authenticationMiddleware,
+  paymentController.buySubscription
+);
+
 paymentRoutes.put(
   "/",
   authenticationMiddleware,
-  validate(paymentSchema.attachPaymentMethodSchema),
-  paymentController.attachPaymentMethod
+  validate(paymentSchema.paymentMethodSchema),
+  paymentController.removePaymentMethod
 );
 
 paymentRoutes.get(
   "/",
   authenticationMiddleware,
   paymentController.getSubscriptionPlans
+);
+
+paymentRoutes.get(
+  "/getPaymentMethods",
+  authenticationMiddleware,
+  paymentController.getPaymentMethods
 );
 
 export default paymentRoutes;

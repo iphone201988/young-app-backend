@@ -93,12 +93,14 @@ export interface UserModel extends Document {
   investmentAccounts: boolean;
   retirement: boolean;
   investmentRealEstate: boolean;
-
+  
   following: any[];
   followers: any[];
   customers: any[];
   savedPosts: any[];
   savedVaults: any[];
+  
+  subscriptionId: any;
 
   createdAt: Date;
   updatedAt: Date;

@@ -90,7 +90,7 @@ const userSchema = new Schema<UserModel>(
     otpExpiry: { type: Date },
     otpVerified: { type: Boolean },
     isVerified: { type: Boolean },
-    isRegistrationCompleted: { type: Boolean,default: false },
+    isRegistrationCompleted: { type: Boolean, default: false },
     isDeleted: { type: Boolean, default: false },
     isDeactivated: { type: Boolean, default: false },
     stripeCustomerId: { type: String },
@@ -105,11 +105,12 @@ const userSchema = new Schema<UserModel>(
     customers: [{ type: Schema.Types.ObjectId, ref: "user" }],
     ...otherCommonFields,
     ...startupOtherFields,
-    ...financialAdvisorOtherFields, 
+    ...financialAdvisorOtherFields,
     ...memberOtherFields,
 
     savedPosts: [{ type: Schema.Types.ObjectId, ref: "post" }],
     savedVaults: [{ type: Schema.Types.ObjectId, ref: "vault" }],
+    subscriptionId: { type: Schema.Types.ObjectId, ref: "subscription" },
   },
   { timestamps: true }
 );

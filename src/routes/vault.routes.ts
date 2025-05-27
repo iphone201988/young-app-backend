@@ -15,12 +15,12 @@ vaultRoutes.put(
   vaultController.joinLeaveVault
 );
 
-vaultRoutes.post(
-  "/addComment",
-  authenticationMiddleware,
-  validate(vaultSchema.addCommentSchema),
-  vaultController.addComment
-);
+// vaultRoutes.post(
+//   "/addComment",
+//   authenticationMiddleware,
+//   validate(vaultSchema.addCommentSchema),
+//   vaultController.addComment
+// );
 
 vaultRoutes.put(
   "/saveUnsaveVault/:vaultId",
@@ -65,5 +65,7 @@ vaultRoutes.get(
   validate(vaultSchema.commonSchema),
   vaultController.getVaultDetailById
 );
+
+vaultRoutes.delete("/", authenticationMiddleware, vaultController.deleteVault);
 
 export default vaultRoutes;

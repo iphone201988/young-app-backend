@@ -489,7 +489,7 @@ const updateUser = TryCatch(
       const index = user.additionalPhotos.indexOf(photo);
       if (index > -1) {
         user.additionalPhotos.splice(index, 1);
-      }
+      } 
     });
 
     formUploadToBeRemoved.forEach((photo: string) => {

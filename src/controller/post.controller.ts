@@ -62,6 +62,7 @@ const getPosts = TryCatch(
       {
         $match: {
           type,
+          isDeleted: false,
         },
       },
       {
@@ -91,6 +92,7 @@ const getPosts = TryCatch(
       {
         $match: {
           type,
+          isDeleted: false,
         },
       },
       { $skip: skip },
@@ -243,44 +245,44 @@ const getPosts = TryCatch(
   }
 );
 
-const addComments = TryCatch(
-  async (
-    req: Request<{}, {}, AddCommentsRequest>,
-    res: Response,
-    next: NextFunction
-  ) => {
-    const { userId } = req;
-    const { postId, comment } = req.body;
+// const addComments = TryCatch(
+//   async (
+//     req: Request<{}, {}, AddCommentsRequest>,
+//     res: Response,
+//     next: NextFunction
+//   ) => {
+//     const { userId } = req;
+//     const { postId, comment } = req.body;
 
-    const post = await getPostById(postId);
+//     const post = await getPostById(postId);
 
-    await Comments.create({
-      userId,
-      postId: post._id,
-      comment,
-      type: postType.SHARE,
-    });
+//     await Comments.create({
+//       userId,
+//       postId: post._id,
+//       comment,
+//       type: postType.SHARE,
+//     });
 
-    return SUCCESS(res, 201, "Comment added successfully");
-  }
-);
+//     return SUCCESS(res, 201, "Comment added successfully");
+//   }
+// );
 
-const getAllComments = TryCatch(
-  async (req: Request<PostIdRequest>, res: Response, next: NextFunction) => {
-    const { postId } = req.params;
+// const getAllComments = TryCatch(
+//   async (req: Request<PostIdRequest>, res: Response, next: NextFunction) => {
+//     const { postId } = req.params;
 
-    const post = await getPostById(postId);
+//     const post = await getPostById(postId);
 
-    const comments = await Comments.find({ postId: post._id })
-      .populate("userId", "_id firstName lastName profileImage")
-      .select("-updatedAt -__v")
-      .sort({ createdAt: -1 });
+//     const comments = await Comments.find({ postId: post._id })
+//       .populate("userId", "_id firstName lastName profileImage")
+//       .select("-updatedAt -__v")
+//       .sort({ createdAt: -1 });
 
-    return SUCCESS(res, 200, "Comments fetched successfully", {
-      data: { comments },
-    });
-  }
-);
+//     return SUCCESS(res, 200, "Comments fetched successfully", {
+//       data: { comments },
+//     });
+//   }
+// );
 
 const saveUnsavePost = TryCatch(
   async (req: Request<PostIdRequest>, res: Response, next: NextFunction) => {
@@ -360,6 +362,7 @@ const getSavedPosts = TryCatch(
     const query: any = {
       _id: { $in: user.savedPosts },
       type,
+      isDeleted: false,
     };
 
     const total = await Post.aggregate([
@@ -601,15 +604,34 @@ const reSharePost = TryCatch(
   }
 );
 
+const deletePost = TryCatch(
+  async (req: Request<PostIdRequest>, res: Response, next: NextFunction) => {
+    const { userId } = req;
+    const { postId } = req.params;
+
+    const post = await getPostById(postId);
+
+    if (post.userId.toString() !== userId)
+      return next(
+        new ErrorHandler("You are not authorized to delete this post", 403)
+      );
+
+    post.isDeleted = true;
+    await post.save();
+    return SUCCESS(res, 200, "Post deleted successfully");
+  }
+);
+
 export default {
   createPost,
   getPosts,
-  addComments,
-  getAllComments,
+  // addComments,
+  // getAllComments,
   saveUnsavePost,
   likeDislikePost,
   getSavedPosts,
   getPostDetailsById,
   getTrendingTopics,
   reSharePost,
+  deletePost,
 };

@@ -65,3 +65,9 @@ export const ratingsType = {
   SHARE: "share",
   VAULT: "vault",
 };
+
+export const subscriptionStatus = {
+  ACTIVE: "active",
+  INACTIVE: "inactive",
+  CANCELLED: "cancelled",
+};

@@ -1,12 +1,12 @@
 import Joi from "joi";
 import { ObjectIdValidation, stringValidation } from ".";
 
-const attachPaymentMethodSchema = {
+const paymentMethodSchema = {
   body: Joi.object({
     paymentMethodId: stringValidation("Payment Method ID"),
   }),
 };
 
 export default {
-  attachPaymentMethodSchema,
+    paymentMethodSchema,
 };
