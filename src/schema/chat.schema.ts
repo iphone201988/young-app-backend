@@ -7,15 +7,6 @@ const getChatMessagesSchema = {
   }),
 };
 
-const reportUserSchema = {
-  body: Joi.object({
-    reporterUserId: ObjectIdValidation("Reporter User Id"),
-    reason: stringValidation("Reason"),
-    additionalDetails: stringValidation("Additional Details"),
-  }),
-};
-
 export default {
   getChatMessagesSchema,
-  reportUserSchema
 };

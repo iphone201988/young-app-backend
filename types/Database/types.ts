@@ -171,8 +171,11 @@ export interface EventsMModel extends Document {
 export interface ReportsModel extends Document {
   userId: any;
   reporterUserId: any;
+  postId: any;
+  vaultId: any;
   reason: string;
   additionalDetails: string;
+  type: string;
   screenshots: string[];
 
   createdAt: Date;
