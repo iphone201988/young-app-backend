@@ -98,7 +98,11 @@ userRoutes.put(
 );
 
 userRoutes.get("/logout", authenticationMiddleware, userController.logout);
-userRoutes.put("/deleteAccount", authenticationMiddleware, userController.deleteAccount);
+userRoutes.put(
+  "/deleteAccount",
+  authenticationMiddleware,
+  userController.deleteAccount
+);
 
 userRoutes.get(
   "/getUserProfile",
@@ -124,6 +128,7 @@ userRoutes.get(
 userRoutes.get(
   "/getLatestUsers",
   authenticationMiddleware,
+  validate(userSchema.getLatestUsersSchema),
   userController.getLatestUsers
 );
 

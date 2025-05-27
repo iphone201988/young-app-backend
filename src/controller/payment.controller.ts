@@ -115,7 +115,7 @@ const removePaymentMethod = TryCatch(
     const { user } = req;
     const { paymentMethodId } = req.body;
 
-    if (!user.stripeCustomerId)
+    if (!user.stripeCustomerId) 
       return next(new ErrorHandler("Customer not found", 404));
 
     await stripe.paymentMethods.detach(paymentMethodId);

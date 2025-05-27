@@ -93,13 +93,13 @@ export interface UserModel extends Document {
   investmentAccounts: boolean;
   retirement: boolean;
   investmentRealEstate: boolean;
-  
+
   following: any[];
   followers: any[];
   customers: any[];
   savedPosts: any[];
   savedVaults: any[];
-  
+
   subscriptionId: any;
 
   createdAt: Date;
@@ -214,6 +214,15 @@ export interface RatingsModel extends Document {
   type: string;
   postId: any;
   vaultId: any;
+
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface SubscriptonModel extends Document {
+  userId: any;
+  stripeSubscriptionId: string;
+  status: string;
 
   createdAt: Date;
   updatedAt: Date;

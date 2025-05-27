@@ -4,9 +4,14 @@ import Report from "../model/report.model";
 import { getUserById } from "../services/user.services";
 import { getPostById } from "../services/post.services";
 import { getVaultById } from "../services/vault.services";
+import { ReportRequest } from "../../types/API/Report/types";
 
-const reportUser = TryCatch(
-  async (req: Request, res: Response, next: NextFunction) => {
+const report = TryCatch(
+  async (
+    req: Request<{}, {}, ReportRequest>,
+    res: Response,
+    next: NextFunction
+  ) => {
     const { userId } = req;
     const { id, reason, additionalDetails, type } = req.body;
 
@@ -40,5 +45,5 @@ const reportUser = TryCatch(
 );
 
 export default {
-  reportUser,
+  report,
 };

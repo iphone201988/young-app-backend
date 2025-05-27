@@ -194,6 +194,12 @@ const contactUsSchema = {
   }),
 };
 
+const getLatestUsersSchema = {
+  query: Joi.object({
+    category: stringValidation("Category", false),
+  }),
+};
+
 export default {
   registerSchema,
   loginUserSchema,
@@ -207,5 +213,6 @@ export default {
   getUserProfileSchema,
   updateCustomersSchema,
   getUsersSchema,
-  contactUsSchema
+  contactUsSchema,
+  getLatestUsersSchema,
 };

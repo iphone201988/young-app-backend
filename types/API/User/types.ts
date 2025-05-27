@@ -139,3 +139,7 @@ export type ContactUsRequest = {
   company: string;
   email: string;
 };
+
+export type GetLatestUsersRequest = {
+  category?: string;
+};

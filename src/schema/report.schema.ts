@@ -6,7 +6,7 @@ import {
 } from ".";
 import { postType } from "../utils/enums";
 
-const reportUserSchema = {
+const reportSchema = {
   body: Joi.object({
     id: ObjectIdValidation("Reporter User Id"),
     reason: stringValidation("Reason"),
@@ -19,5 +19,5 @@ const reportUserSchema = {
 };
 
 export default {
-  reportUserSchema,
+  reportSchema,
 };

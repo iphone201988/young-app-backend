@@ -24,6 +24,7 @@ import {
   CompleteRegistrationRequest,
   ContactUsRequest,
   FollowUnfollowRequest,
+  GetLatestUsersRequest,
   GetUsersRequest,
   LoginUserRequest,
   RegisterUserRequest,
@@ -489,7 +490,7 @@ const updateUser = TryCatch(
       const index = user.additionalPhotos.indexOf(photo);
       if (index > -1) {
         user.additionalPhotos.splice(index, 1);
-      } 
+      }
     });
 
     formUploadToBeRemoved.forEach((photo: string) => {
@@ -736,15 +737,24 @@ const getUsers = TryCatch(
 );
 
 const getLatestUsers = TryCatch(
-  async (req: Request, res: Response, next: NextFunction) => {
+  async (
+    req: Request<{}, {}, {}, GetLatestUsersRequest>,
+    res: Response,
+    next: NextFunction
+  ) => {
     const { userId } = req;
+    const { category } = req.query;
 
-    const users = await User.aggregate([
+    const query: any = {
+      _id: { $ne: new mongoose.Types.ObjectId(userId) },
+      isDeleted: false,
+    };
+
+    if (category) query.role = category;
+
+    const pipeline: any = [
       {
-        $match: {
-          _id: { $ne: new mongoose.Types.ObjectId(userId) },
-          isDeleted: false,
-        },
+        $match: query,
       },
       {
         $sort: { createdAt: -1 },
@@ -755,11 +765,17 @@ const getLatestUsers = TryCatch(
           users: { $push: "$$ROOT" },
         },
       },
-      {
+    ];
+
+    if (!category) {
+      pipeline.push({
         $project: {
           users: { $slice: ["$users", 5] },
         },
-      },
+      });
+    }
+
+    pipeline.push(
       { $unwind: "$users" },
       {
         $replaceRoot: { newRoot: "$users" },
@@ -772,8 +788,10 @@ const getLatestUsers = TryCatch(
           profileImage: 1,
           role: 1,
         },
-      },
-    ]);
+      }
+    );
+
+    const users = await User.aggregate(pipeline);
 
     return SUCCESS(res, 200, "Users fetched successfully", {
       data: {

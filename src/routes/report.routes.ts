@@ -18,8 +18,8 @@ reportRoutes.post(
     },
   ]),
   validateFiles(["screenshots"]),
-  validate(reportSchema.reportUserSchema),
-  reportsController.reportUser
+  validate(reportSchema.reportSchema),
+  reportsController.report
 );
 
 export default reportRoutes;
