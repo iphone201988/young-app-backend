@@ -84,6 +84,6 @@ postRoutes.put(
   postController.reSharePost
 );
 
-postRoutes.delete("/", authenticationMiddleware, postController.deletePost);
+postRoutes.delete("/:postId", authenticationMiddleware, postController.deletePost);
 
 export default postRoutes;

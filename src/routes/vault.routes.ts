@@ -66,6 +66,6 @@ vaultRoutes.get(
   vaultController.getVaultDetailById
 );
 
-vaultRoutes.delete("/", authenticationMiddleware, vaultController.deleteVault);
+vaultRoutes.delete("/:vaultId", authenticationMiddleware, vaultController.deleteVault);
 
 export default vaultRoutes;
