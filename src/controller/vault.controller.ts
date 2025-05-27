@@ -54,6 +54,7 @@ const getVaults = TryCatch(
 
     const query: any = {
       access: vaultAccess.PUBLIC,
+      isDeleted: false,
     };
 
     const total = await Vault.aggregate([
@@ -368,6 +369,7 @@ const getSavedVaults = TryCatch(
 
     const query: any = {
       $or: [{ members: userId }, { _id: { $in: user.savedVaults } }],
+      isDeleted: false,
     };
 
     const total = await Vault.aggregate([
