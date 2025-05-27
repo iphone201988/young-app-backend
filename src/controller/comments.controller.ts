@@ -23,7 +23,7 @@ const addComment = TryCatch(
 
     let newComment: CommentsModel;
 
-    if (type == "post") {
+    if (type == "share") {
       const post = await getPostById(id);
 
       newComment = await Comments.create({
