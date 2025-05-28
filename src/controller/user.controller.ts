@@ -781,12 +781,49 @@ const getLatestUsers = TryCatch(
         $replaceRoot: { newRoot: "$users" },
       },
       {
+        $lookup: {
+          from: "ratings",
+          let: { userId: "$_id" },
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $and: [
+                    { $eq: ["$receiverId", "$$userId"] },
+                    { $ne: ["$senderId", new mongoose.Types.ObjectId(userId)] },
+                  ],
+                },
+              },
+            },
+            {
+              $group: {
+                _id: null,
+                ratings: { $avg: "$ratings" },
+              },
+            },
+          ],
+          as: "isRated",
+        },
+      },
+      {
+        $unwind: {
+          path: "$isRated",
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+      {
+        $set: {
+          isRated: "$isRated.ratings",
+        },
+      },
+      {
         $project: {
           firstName: 1,
           lastName: 1,
           username: 1,
           profileImage: 1,
           role: 1,
+          isRated: 1,
         },
       }
     );

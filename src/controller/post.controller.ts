@@ -128,6 +128,27 @@ const getPosts = TryCatch(
           as: "comments",
         },
       },
+      {
+        $lookup: {
+          from: "reports",
+          let: { id: "$_id" },
+          pipeline: [
+            {
+              $match: {
+                $expr: { $eq: ["$postId", "$$id"] },
+                reporterUserId: new mongoose.Types.ObjectId(userId),
+              },
+            },
+            {
+              $project: {
+                reason: 1,
+                _id: 1,
+              },
+            },
+          ],
+          as: "isReported",
+        },
+      },
       // {
       //   $lookup: {
       //     from: "ratings",
@@ -173,27 +194,7 @@ const getPosts = TryCatch(
         $addFields: {
           commentsCount: { $size: "$comments" },
           likesCount: { $size: "$likedBy" },
-
-          // userRatingObj: {
-          //   $first: {
-          //     $filter: {
-          //       input: "$ratings",
-          //       as: "rating",
-          //       cond: {
-          //         $and: [
-          //           {
-          //             $eq: [
-          //               "$$rating.senderId",
-          //               new mongoose.Types.ObjectId(userId),
-          //             ],
-          //           },
-          //           { $eq: ["$$rating.type", ratingsType.SHARE] },
-          //         ],
-          //       },
-          //     },
-          //   },
-          // },
-
+          isReported: { $gt: [{ $size: "$isReported" }, 0] },
           isSaved: {
             $cond: {
               if: {
@@ -463,9 +464,31 @@ const getSavedPosts = TryCatch(
         },
       },
       {
+        $lookup: {
+          from: "reports",
+          let: { id: "$_id" },
+          pipeline: [
+            {
+              $match: {
+                $expr: { $eq: ["$postId", "$$id"] },
+                reporterUserId: new mongoose.Types.ObjectId(userId),
+              },
+            },
+            {
+              $project: {
+                reason: 1,
+                _id: 1,
+              },
+            },
+          ],
+          as: "isReported",
+        },
+      },
+      {
         $addFields: {
           commentsCount: { $size: "$comments" },
           likesCount: { $size: "$likedBy" },
+          isReported: { $gt: [{ $size: "$isReported" }, 0] },
           isLiked: {
             $cond: {
               if: {

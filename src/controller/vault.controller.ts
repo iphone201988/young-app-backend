@@ -13,6 +13,7 @@ import { getVaultById } from "../services/vault.services";
 import ErrorHandler from "../utils/ErrorHandler";
 import Comments from "../model/comments.model";
 import User from "../model/user.model";
+import mongoose from "mongoose";
 
 const createVault = TryCatch(
   async (
@@ -46,7 +47,7 @@ const getVaults = TryCatch(
     res: Response,
     next: NextFunction
   ) => {
-    const { user } = req;
+    const { user, userId } = req;
     let { userType, page = 1, limit = process.env.LIMIT } = req.query;
     page = Number(page);
     limit = Number(limit);
@@ -157,8 +158,30 @@ const getVaults = TryCatch(
         },
       },
       {
+        $lookup: {
+          from: "reports",
+          let: { id: "$_id" },
+          pipeline: [
+            {
+              $match: {
+                $expr: { $eq: ["$vaultId", "$$id"] },
+                reporterUserId: new mongoose.Types.ObjectId(userId),
+              },
+            },
+            {
+              $project: {
+                reason: 1,
+                _id: 1,
+              },
+            },
+          ],
+          as: "isReported",
+        },
+      },
+      {
         $addFields: {
           commentsCount: { $size: "$comments" },
+          isReported: { $gt: [{ $size: "$isReported" }, 0] },
           isSaved: {
             $cond: {
               if: { $in: ["$_id", user.savedVaults] },
@@ -474,8 +497,30 @@ const getSavedVaults = TryCatch(
         },
       },
       {
+        $lookup: {
+          from: "reports",
+          let: { id: "$_id" },
+          pipeline: [
+            {
+              $match: {
+                $expr: { $eq: ["$vaultId", "$$id"] },
+                reporterUserId: new mongoose.Types.ObjectId(userId),
+              },
+            },
+            {
+              $project: {
+                reason: 1,
+                _id: 1,
+              },
+            },
+          ],
+          as: "isReported",
+        },
+      },
+      {
         $addFields: {
           commentsCount: { $size: "$comments" },
+          isReported: { $gt: [{ $size: "$isReported" }, 0] },
         },
       },
       { $sort: { createdAt: -1 } },
