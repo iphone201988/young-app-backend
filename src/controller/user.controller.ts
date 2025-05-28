@@ -33,7 +33,7 @@ import {
   Verify2FARequest,
   VerifyOTPRequest,
 } from "../../types/API/User/types";
-import { userRole } from "../utils/enums";
+import { ratingsType, userRole } from "../utils/enums";
 import OTPAuth from "otpauth";
 import { UserModel } from "../../types/Database/types";
 import mongoose from "mongoose";
@@ -798,17 +798,23 @@ const getLatestUsers = TryCatch(
                 $expr: {
                   $and: [
                     { $eq: ["$receiverId", "$$userId"] },
-                    { $ne: ["$senderId", new mongoose.Types.ObjectId(userId)] },
+                    { $eq: ["$senderId", new mongoose.Types.ObjectId(userId)] },
+                    { $eq: ["$type", ratingsType.USER] },
                   ],
                 },
               },
             },
             {
-              $group: {
-                _id: null,
-                ratings: { $avg: "$ratings" },
+              $project: {
+                ratings: 1,
               },
             },
+            // {
+            //   $group: {
+            //     _id: null,
+            //     ratings: { $avg: "$ratings" },
+            //   },
+            // },
           ],
           as: "isRated",
         },
