@@ -123,6 +123,7 @@ const getAllComments = TryCatch(
                 firstName: 1,
                 lastName: 1,
                 profileImage: 1,
+                role: 1,
               },
             },
           ],
