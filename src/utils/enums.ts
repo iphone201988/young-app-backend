@@ -4,6 +4,7 @@ export const deviceType = {
 };
 
 export const userRole = {
+  ADMIN: "admin",
   GENERAL_MEMBER: "general_member",
   FINANCIAL_ADVISOR: "financial_advisor",
   FINANCIAL_FIRM: "financial_firm",
@@ -70,4 +71,10 @@ export const subscriptionStatus = {
   ACTIVE: "active",
   INACTIVE: "inactive",
   CANCELLED: "cancelled",
+};
+
+export const documentVerificationStatus = {
+  APPROVED: "approved",
+  IN_REVIEW: "in_review",
+  REJECT: "reject",
 };

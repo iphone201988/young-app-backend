@@ -101,6 +101,7 @@ export interface UserModel extends Document {
   savedVaults: any[];
 
   subscriptionId: any;
+  isDocumentVerified: string;
 
   createdAt: Date;
   updatedAt: Date;

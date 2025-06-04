@@ -703,6 +703,8 @@ const logout = TryCatch(
   async (req: Request, res: Response, next: NextFunction) => {
     const { user } = req;
     user.jti = undefined;
+    user.deviceToken = undefined;
+    user.deviceType = undefined;
     await user.save();
     return SUCCESS(res, 200, "User loggedout successfully");
   }

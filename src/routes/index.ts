@@ -8,6 +8,7 @@ import chatRoutes from "./chat.routes";
 import ratingsRoutes from "./ratings.routes";
 import paymentRoutes from "./payment.routes";
 import reportRoutes from "./report.routes";
+import adminRoutes from "./admin.routes";
 
 const router = express.Router();
 
@@ -20,5 +21,6 @@ router.use("/chat", chatRoutes);
 router.use("/rating", ratingsRoutes);
 router.use("/payment", paymentRoutes);
 router.use("/report", reportRoutes);
+router.use("/admin", adminRoutes);
 
 export default router;

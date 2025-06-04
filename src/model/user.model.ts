@@ -1,6 +1,11 @@
 import { Schema, model } from "mongoose";
 import bcrypt from "bcrypt";
-import { accountPackage, deviceType, userRole } from "../utils/enums";
+import {
+  accountPackage,
+  deviceType,
+  documentVerificationStatus,
+  userRole,
+} from "../utils/enums";
 import { UserModel } from "../../types/Database/types";
 
 const otherCommonFields = {
@@ -111,6 +116,10 @@ const userSchema = new Schema<UserModel>(
     savedPosts: [{ type: Schema.Types.ObjectId, ref: "post" }],
     savedVaults: [{ type: Schema.Types.ObjectId, ref: "vault" }],
     subscriptionId: { type: Schema.Types.ObjectId, ref: "subscription" },
+    isDocumentVerified: {
+      type: String,
+      enum: Object.values(documentVerificationStatus),
+    },
   },
   { timestamps: true }
 );

@@ -3,10 +3,14 @@ import { connectToDB } from "./src/utils/helper";
 import { Server } from "socket.io";
 import { createServer } from "http";
 import useSockets from "./src/socket/socket";
+import useMediaSoup from "./src/mediasoup";
+import https from "httpolyglot";
+import http from "http";
 
-const httpServer = createServer(app);
+const httpServer = http.createServer(app);
 const io = new Server(httpServer);
-useSockets(io);
+// useSockets(io);
+useMediaSoup(io);
 
 connectToDB()
   .then(() => {
