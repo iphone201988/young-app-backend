@@ -40,6 +40,7 @@ import mongoose from "mongoose";
 import Contact from "../model/contact.model";
 import Ratings from "../model/ratings.model";
 import Chat from "../model/chat.model";
+import Report from "../model/report.model";
 
 const registerUser = TryCatch(
   async (
@@ -652,12 +653,18 @@ const getUserProfile = TryCatch(
     if (!userProfile) return next(new ErrorHandler("User not found", 404));
 
     let isRated: any;
+    let isReported: any;
     let chatId: any;
     if (req.query.userId) {
       isRated = await Ratings.findOne({
         senderId: user._id,
         receiverId: req.query.userId,
       }).select("ratings");
+
+      isReported = await Report.findOne({
+        reporterUserId: user._id,
+        userId: req.query.userId,
+      });
 
       const chat = await Chat.findOne({
         chatUsers: { $all: [req.userId, req.query.userId] },
@@ -680,6 +687,7 @@ const getUserProfile = TryCatch(
           chatId,
           isRated: isRated?.ratings,
           isFollowed,
+          isReported,
           isConnectedWithProfile,
           customers: userProfile.customers.length,
           followers: userProfile.followers.length,
