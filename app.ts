@@ -27,7 +27,7 @@ app.use("/api/didit-webhook", async (req: Request, res: Response) => {
       let status: string;
       if (status == "Approved") {
         status = documentVerificationStatus.APPROVED;
-      } else if (status == "Reject") {
+      } else if (status == "Reject" || status == "Declined") {
         status = documentVerificationStatus.REJECT;
       } else {
         status = documentVerificationStatus.IN_REVIEW;
