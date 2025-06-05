@@ -37,7 +37,7 @@ app.use("/api/didit-webhook", async (req: Request, res: Response) => {
     }
 
     // Process the payload as needed
-    // res.status(200).send("Webhook received successfully");
+    res.status(200).send("Webhook received successfully");
   } catch (error) {
     console.error("Error processing webhook:", error);
     res.status(500).send("Internal Server Error");
