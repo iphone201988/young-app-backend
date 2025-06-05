@@ -14,7 +14,7 @@ const useMediaSoup = async (
   io: Server<DefaultEventsMap, DefaultEventsMap, DefaultEventsMap, any>
 ) => {
   // socket.io namespace (could represent a room?)
-  const connections = io.of("/mediasoup");
+  // const connections = io.of("/mediasoup");
 
   /**
    * Worker
@@ -78,7 +78,7 @@ const useMediaSoup = async (
     },
   ];
 
-  connections.on("connection", async (socket) => {
+  io.on("connection", async (socket) => {
     console.log("connected successfully", socket.id);
     // Passing id to ourselves
     socket.emit("connection-success", {
@@ -96,26 +96,31 @@ const useMediaSoup = async (
       return items;
     };
 
-    socket.on("disconnect", () => {
-      // do some cleanup
-      console.log("peer disconnected");
-      consumers = removeItems(consumers, socket.id, "consumer");
-      producers = removeItems(producers, socket.id, "producer");
-      transports = removeItems(transports, socket.id, "transport");
+    // socket.on("disconnect", () => {
+    //   // do some cleanup
+    //   console.log("peer disconnected");
+    //   consumers = removeItems(consumers, socket.id, "consumer");
+    //   producers = removeItems(producers, socket.id, "producer");
+    //   transports = removeItems(transports, socket.id, "transport");
 
-      const { roomName } = peers[socket.id];
-      delete peers[socket.id];
+    //   const { roomName } = peers[socket.id];
+    //   delete peers[socket.id];
 
-      // remove socket from room
-      rooms[roomName] = {
-        router: rooms[roomName].router,
-        peers: rooms[roomName].peers.filter(
-          (socketId) => socketId !== socket.id
-        ),
-      };
-    });
+    //   // remove socket from room
+    //   rooms[roomName] = {
+    //     router: rooms[roomName].router,
+    //     peers: rooms[roomName].peers.filter(
+    //       (socketId) => socketId !== socket.id
+    //     ),
+    //   };
+    // });
+
+    // socket.on("joinRoom", ({ roomName }) => {
+    //   console.log("joinRoom event received", roomName);
+    // });
 
     socket.on("joinRoom", async ({ roomName }, callback) => {
+      console.log("joinRoom emitted", roomName);
       // create Router if it does not exist
       // const router1 = rooms[roomName] && rooms[roomName].get('data').router || await createRoom(roomName, socket.id)
       const router1 = await createRoom(roomName, socket.id);
@@ -190,6 +195,7 @@ const useMediaSoup = async (
     // Client emits a request to create server side Transport
     // We need to differentiate between the producer and consumer transports
     socket.on("createWebRtcTransport", async ({ consumer }, callback) => {
+      console.log("Enter in createWebRtcTransport");
       // get Room Name from Peer's properties
       const roomName = peers[socket.id].roomName;
 
@@ -244,6 +250,7 @@ const useMediaSoup = async (
       // add the consumer id to the peers list
       peers[socket.id] = {
         ...peers[socket.id],
+        
         consumers: [...peers[socket.id].consumers, consumer.id],
       };
     };
