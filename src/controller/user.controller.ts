@@ -648,6 +648,7 @@ const updateCustomers = TryCatch(
 const getUserProfile = TryCatch(
   async (req: Request, res: Response, next: NextFunction) => {
     const { user } = req;
+    console.log("req.query.userId:::", req.query.userId);
     const userId = req.query.userId || user._id;
     const userProfile = await User.findById(userId);
     if (!userProfile) return next(new ErrorHandler("User not found", 404));
@@ -655,7 +656,9 @@ const getUserProfile = TryCatch(
     let isRated: any;
     let isReported: any;
     let chatId: any;
-    if (req.query.userId) {
+    let isFollowed: any;
+    let isConnectedWithProfile: any;
+    if (req.query.userId && req.user) {
       isRated = await Ratings.findOne({
         senderId: user._id,
         receiverId: req.query.userId,
@@ -675,9 +678,12 @@ const getUserProfile = TryCatch(
     const ratings = await Ratings.find({ receiverId: userId }).select(
       "ratings"
     );
-    console.log("user.followers::", userProfile.followers, user._id);
-    const isFollowed = userProfile.followers.includes(user._id);
-    const isConnectedWithProfile = userProfile.customers.includes(user._id);
+
+    if (req.user) {
+      console.log("user.followers::", userProfile.followers, user._id);
+      isFollowed = userProfile.followers.includes(user._id);
+      isConnectedWithProfile = userProfile.customers.includes(user._id);
+    }
 
     return SUCCESS(res, 200, "User profile fetched successfully", {
       data: {
