@@ -14,14 +14,26 @@ app.use(express.json());
 app.use(cors());
 app.use(morgan("tiny"));
 
-app.use("/api/didit-webhook", async (req: Request, res: Response) => {
+app.use("/api/didit-webhook", async (req: any, res: any) => {
   try {
     const payload = req.body;
     const { status } = payload;
-    const { vendor_data } = payload.decision;
-    console.log("Received webhook payload:", status, vendor_data);
+    // const { vendor_data } = payload.decision;
 
-    const user = await User.findById(vendor_data);
+    if (!status) {
+      return res.status(400).send("Status is required");
+    }
+    if (!payload.decision?.vendor_data) {
+      return res.status(400).send("Vendor data is required");
+    }
+
+    console.log(
+      "Received webhook payload:",
+      status,
+      payload.decision.vendor_data
+    );
+
+    const user = await User.findById(payload.decision.vendor_data);
 
     if (user) {
       let status: string;
