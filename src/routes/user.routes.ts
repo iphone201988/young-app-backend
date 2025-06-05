@@ -106,7 +106,7 @@ userRoutes.put(
 
 userRoutes.get(
   "/getUserProfile",
-  authenticationMiddleware,
+  // authenticationMiddleware,
   validate(userSchema.getUserProfileSchema),
   userController.getUserProfile
 );
