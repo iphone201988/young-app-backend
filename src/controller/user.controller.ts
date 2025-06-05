@@ -687,7 +687,7 @@ const getUserProfile = TryCatch(
           chatId,
           isRated: isRated?.ratings,
           isFollowed,
-          isReported,
+          isReported: isReported ? true : false,
           isConnectedWithProfile,
           customers: userProfile.customers.length,
           followers: userProfile.followers.length,
