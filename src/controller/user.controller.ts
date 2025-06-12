@@ -712,6 +712,9 @@ const getUnauthUser = TryCatch(
     return SUCCESS(res, 200, "User profile fetched successfully", {
       data: {
         _id: user._id,
+        isDocumentVerified: user?.isDocumentVerified
+          ? user?.isDocumentVerified
+          : null,
       },
     });
   }
