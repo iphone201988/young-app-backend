@@ -648,7 +648,6 @@ const updateCustomers = TryCatch(
 const getUserProfile = TryCatch(
   async (req: Request, res: Response, next: NextFunction) => {
     const { user } = req;
-    console.log("req.query.userId:::", req.query.userId);
     const userId = req.query.userId || user._id;
     const userProfile = await User.findById(userId);
     if (!userProfile) return next(new ErrorHandler("User not found", 404));
@@ -699,6 +698,20 @@ const getUserProfile = TryCatch(
           followers: userProfile.followers.length,
           following: userProfile.following.length,
         },
+      },
+    });
+  }
+);
+
+const getUnauthUser = TryCatch(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const { userId } = req.query;
+    const user = await User.findById(userId);
+    if (!user) return next(new ErrorHandler("User not found", 404));
+
+    return SUCCESS(res, 200, "User profile fetched successfully", {
+      data: {
+        _id: user._id,
       },
     });
   }
@@ -909,4 +922,5 @@ export default {
   getUsers,
   getLatestUsers,
   contactUs,
+  getUnauthUser,
 };

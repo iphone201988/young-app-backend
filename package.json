@@ -6,7 +6,7 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "tsc --build",
     "watch": "tsc --watch",
-    "pre:dev": "nodemon dist/server.js",
+    "pre:dev": "node dist/server.js",
     "dev": "concurrently \"npm run watch\" \"npm run pre:dev\"",
     "start": "npm run build && node dist/server.js"
   },

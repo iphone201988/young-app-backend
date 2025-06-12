@@ -106,9 +106,15 @@ userRoutes.put(
 
 userRoutes.get(
   "/getUserProfile",
-  // authenticationMiddleware,
+  authenticationMiddleware,
   validate(userSchema.getUserProfileSchema),
   userController.getUserProfile
+);
+
+userRoutes.get(
+  "/getUnauthUser",
+  validate(userSchema.getUserProfileSchema),
+  userController.getUnauthUser
 );
 
 userRoutes.put(

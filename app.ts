@@ -1,12 +1,12 @@
 import express, { Request, Response } from "express";
 import "dotenv/config";
 import morgan from "morgan";
-import { errorMiddleware } from "./src/middleware/error.middleware.js";
-import router from "./src/routes/index.js";
+import { errorMiddleware } from "./src/middleware/error.middleware";
+import router from "./src/routes/index";
 import path from "path";
 import cors from "cors";
-import User from "./src/model/user.model.js";
-import { documentVerificationStatus } from "./src/utils/enums.js";
+import User from "./src/model/user.model";
+import { documentVerificationStatus } from "./src/utils/enums";
 
 const app = express();
 
