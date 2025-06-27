@@ -25,7 +25,7 @@ const createPost = TryCatch(
     const { title, symbol, topic, description, type, scheduleDate } = req.body;
     const files = getFiles(req, ["image"]);
 
-    await Post.create({
+    const post = await Post.create({
       userId,
       title,
       symbol,
@@ -36,7 +36,9 @@ const createPost = TryCatch(
       type: type,
     });
 
-    return SUCCESS(res, 201, "Post created successfully");
+    return SUCCESS(res, 201, "Post created successfully", {
+      data: { post },
+    });
   }
 );
 

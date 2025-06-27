@@ -177,6 +177,7 @@ export interface ReportsModel extends Document {
   reason: string;
   additionalDetails: string;
   type: string;
+  isResolved:boolean,
   screenshots: string[];
 
   createdAt: Date;
@@ -203,6 +204,7 @@ export interface AdvertiseModel extends Document {
   website: string;
   plan: string;
   file: string;
+  status: string;
 
   createdAt: Date;
   updatedAt: Date;

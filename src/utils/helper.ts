@@ -47,7 +47,7 @@ export const getFiles = (req: Request, fileNames: Array<string>) => {
     if (req.files && req.files[fileKey]) {
       files[fileKey] = req.files[fileKey].map(
         (file: any) => "/uploads/" + file.filename
-      );
+      );  
     }
   });
   if (Object.keys(files).length) return files;

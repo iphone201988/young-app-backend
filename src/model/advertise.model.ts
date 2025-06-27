@@ -1,5 +1,6 @@
 import { Schema, model } from "mongoose";
 import { AdvertiseModel } from "../../types/Database/types";
+import { adStatus } from "../utils/enums";
 
 const advertiseSchema = new Schema<AdvertiseModel>(
   {
@@ -10,6 +11,11 @@ const advertiseSchema = new Schema<AdvertiseModel>(
     website: { type: String },
     plan: { type: String },
     file: { type: String },
+    status: {
+      type: String,
+      enum: Object.values(adStatus),
+      default: adStatus.IN_REVIEW,
+    },
   },
   { timestamps: true }
 );

@@ -104,20 +104,19 @@ export const ObjectIdValidation = (key: string, isRequired: boolean = true) => {
   return schema;
 };
 
-export const passwordValidation = () => {
+export const passwordValidation = (key: string = "Password") => {
   return Joi.string()
     .min(12)
     .max(50)
     .pattern(/^(?=.*[a-z])(?=.*[A-Z])(?=.*[^a-zA-Z0-9]).{12,}$/)
     .required()
     .messages({
-      "string.base": "Password should be a type of text.",
-      "string.empty": "Password cannot be empty.",
-      "string.min": "Password should have at least 12 characters.",
-      "string.max": "Password should not exceed 50 characters.",
-      "string.pattern.base":
-        "Password must include at least one uppercase letter, one lowercase letter, and one special character.",
-      "any.required": "Password is required.",
+      "string.base": `${key} should be a type of text.`,
+      "string.empty": `${key} cannot be empty.`,
+      "string.min": `${key} should have at least 12 characters.`,
+      "string.max": `${key} should not exceed 50 characters.`,
+      "string.pattern.base": `${key} must include at least one uppercase letter, one lowercase letter, and one special character.`,
+      "any.required": `${key} is required.`,
     });
 };
 

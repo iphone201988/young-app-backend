@@ -5,6 +5,7 @@ import { authenticationMiddleware } from "../middleware/auth.middleware";
 import vaultController from "../controller/vault.controller";
 import vaultSchema from "../schema/vault.schema";
 import validateFiles from "../middleware/validateFiles.middleware";
+import uploadS3 from "../middleware/multerS3.middleware";
 
 const vaultRoutes = express.Router();
 
@@ -39,7 +40,7 @@ vaultRoutes.get(
 vaultRoutes.post(
   "/",
   authenticationMiddleware,
-  upload.fields([{ name: "image", maxCount: 1 }]),
+  uploadS3.fields([{ name: "image", maxCount: 1 }]),
   validateFiles(["image"]),
   validate(vaultSchema.createVaultSchema),
   vaultController.createVault
@@ -66,6 +67,10 @@ vaultRoutes.get(
   vaultController.getVaultDetailById
 );
 
-vaultRoutes.delete("/:vaultId", authenticationMiddleware, vaultController.deleteVault);
+vaultRoutes.delete(
+  "/:vaultId",
+  authenticationMiddleware,
+  vaultController.deleteVault
+);
 
 export default vaultRoutes;

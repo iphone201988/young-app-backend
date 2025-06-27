@@ -78,3 +78,9 @@ export const documentVerificationStatus = {
   IN_REVIEW: "in_review",
   REJECT: "reject",
 };
+
+export const adStatus={
+  APPROVED: "approved",
+  IN_REVIEW: "in_review",
+  REJECT: "reject",
+}

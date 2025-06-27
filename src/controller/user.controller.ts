@@ -287,6 +287,9 @@ const verify2FA = TryCatch(
 
     const user = await getUserById(userId);
 
+    if (user?.isDeactivated)
+      return next(new ErrorHandler("Your account has been deactivated", 400));
+
     const totp = new OTPAuth.TOTP({
       issuer: process.env.TOTP_ISSUER,
       label: process.env.TOTP_LABEL,

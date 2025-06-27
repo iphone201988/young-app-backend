@@ -36,22 +36,13 @@ const uploadS3 = multer({
       }
     },
     key: function (req, file, cb) {
-      const { userId } = req;
-      const isImage = req.files["profileImage"] || req.files["photos"];
-
       const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
       const extension = path.extname(file.originalname).toLowerCase();
       const fileName = file.fieldname + "-" + uniqueSuffix + extension;
-      const imageDir = `uploads/users/${fileName}`;
-      const chatDir = `uploads/chats/user-${userId}/${fileName}`;
-      console.log("fileName::", fileName, imageDir, chatDir);
+      const imageDir = `uploads/${fileName}`;
 
       try {
-        if (isImage) {
-          cb(null, imageDir);
-        } else {
-          cb(null, chatDir);
-        }
+        cb(null, imageDir);
       } catch (error) {
         console.log("error::", error);
       }

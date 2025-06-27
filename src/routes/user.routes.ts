@@ -5,6 +5,7 @@ import userSchema from "../schema/user.schema";
 import userController from "../controller/user.controller";
 import upload from "../middleware/multer.middleware";
 import validateFiles from "../middleware/validateFiles.middleware";
+import uploadS3 from "../middleware/multerS3.middleware";
 
 const userRoutes = express.Router();
 
@@ -34,7 +35,7 @@ userRoutes.put(
 
 userRoutes.put(
   "/completeRegistration",
-  upload.fields([
+  uploadS3.fields([
     {
       name: "licenseImage",
       maxCount: 1,
@@ -75,7 +76,7 @@ userRoutes.put(
 userRoutes.put(
   "/updateUser",
   authenticationMiddleware,
-  upload.fields([
+  uploadS3.fields([
     {
       name: "licenseImage",
       maxCount: 1,
@@ -141,7 +142,7 @@ userRoutes.get(
 userRoutes.post(
   "/contactUs",
   authenticationMiddleware,
-  upload.fields([
+  uploadS3.fields([
     {
       name: "file",
       maxCount: 1,

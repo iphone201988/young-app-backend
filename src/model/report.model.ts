@@ -12,6 +12,7 @@ const reportSchema = new Schema<ReportsModel>(
     additionalDetails: { type: String },
     screenshots: [{ type: String }],
     type: { type: String, enum: Object.values({ USER: "user", ...postType }) },
+    isResolved: { type: Boolean, default: false },
   },
   { timestamps: true }
 );
