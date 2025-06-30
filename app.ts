@@ -59,14 +59,10 @@ app.use("/api/didit-webhook", async (req: any, res: any) => {
 
 app.post("/transport-produce", async (req: Request, res: Response) => {
   console.log("req.body::::", req.body);
-  const producerId = transportProduceAPI(req.body);
+  const producerId = await transportProduceAPI(req.body);
+  console.log("producerId:::", producerId);
 
-  res.status(200).json({
-    success: true,
-    data: {
-      producerId,
-    },
-  });
+  res.status(200).send(producerId);
 });
 
 app.use("/api/v1", router);

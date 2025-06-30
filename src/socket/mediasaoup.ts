@@ -384,6 +384,24 @@ const useMediaSoup = async (
         const { roomName } = peers[socket.id];
         addProducer(producer, roomName);
 
+        if (kind === "video") {
+          try {
+            const filePath = await startRecording(
+              rooms[roomName].router,
+              producer,
+              roomName,
+              socket.id
+            );
+            console.log(
+              `Auto-started recording for video producer: ${filePath}`
+            );
+          } catch (error) {
+            console.error("Failed to auto-start recording:", error);
+          }
+        }
+
+
+
         console.log("Producer ID: ", producer.id, producer.kind);
 
         producer.on("transportclose", () => {
@@ -596,10 +614,10 @@ const useMediaSoup = async (
         const webRtcTransport_options = {
           listenIps: [
             {
-              // ip: "127.0.0.1", // replace with relevant IP address
-              // announcedIp: 'null',
-              ip: "0.0.0.0", // replace with relevant IP address
-              announcedIp: "127.0.0.1",
+              ip: "3.148.147.103", // replace with relevant IP address
+              announcedIp: 'null',
+              // ip: "0.0.0.0", // replace with relevant IP address
+              // announcedIp: "127.0.0.1",
             },
           ],
           enableUdp: true,
@@ -696,7 +714,8 @@ const useMediaSoup = async (
 
       const createConsumerAndTransport = async (producer) => {
         const plainTransport = await router.createPlainTransport({
-          listenIp: { ip: "127.0.0.1", announcedIp: null },
+          // listenIp: { ip: "127.0.0.1", announcedIp: null },
+          listenIp: { ip: "3.148.147.103", announcedIp: null },
           rtcpMux: false,
           comedia: false,
         });
@@ -705,7 +724,8 @@ const useMediaSoup = async (
         const rtcpPort = await getFreePort();
 
         await plainTransport.connect({
-          ip: "127.0.0.1",
+          // ip: "127.0.0.1",
+          ip: "3.148.147.103",
           port: rtpPort,
           rtcpPort: rtcpPort,
         });
@@ -761,22 +781,22 @@ const useMediaSoup = async (
         const videoCname = videoConsumer.rtpParameters.rtcp.cname || "video";
 
         return `v=0
-o=- 0 0 IN IP4 127.0.0.1
+o=- 0 0 IN IP4 3.148.147.103
 s=MediaStream
 t=0 0
-c=IN IP4 127.0.0.1
+c=IN IP4 3.148.147.103
 
 m=audio ${audioPort} RTP/AVP ${audioPayloadType}
-c=IN IP4 127.0.0.1
+c=IN IP4 3.148.147.103
 a=rtpmap:${audioPayloadType} ${audioMimeType}/${audioClockRate}/${audioChannels}
-a=rtcp:${audioRtcpPort} IN IP4 127.0.0.1
+a=rtcp:${audioRtcpPort} IN IP4 3.148.147.103
 a=recvonly
 a=ssrc:${audioSsrc} cname:${audioCname}
 
 m=video ${videoPort} RTP/AVP ${videoPayloadType}
-c=IN IP4 127.0.0.1
+c=IN IP4 3.148.147.103
 a=rtpmap:${videoPayloadType} ${videoMimeType}/${videoClockRate}
-a=rtcp:${videoRtcpPort} IN IP4 127.0.0.1
+a=rtcp:${videoRtcpPort} IN IP4 3.148.147.103
 a=recvonly
 a=ssrc:${videoSsrc} cname:${videoCname}
 `;
