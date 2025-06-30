@@ -14,6 +14,7 @@ import { LoginUserRequest } from "../../types/API/User/types";
 import Report from "../model/report.model";
 import Advertise from "../model/advertise.model";
 import Post from "../model/post.model";
+import moment from "moment";
 
 const login = TryCatch(
   async (
@@ -36,6 +37,112 @@ const login = TryCatch(
     return SUCCESS(res, 200, "LoggedIn successfully", {
       data: {
         token,
+      },
+    });
+  }
+);
+const getDashboardStats = TryCatch(
+  async (req: Request, res: Response, next: NextFunction) => {
+    // Date ranges
+    const startOfThisMonth = moment.utc().startOf("month").toDate();
+    const endOfThisMonth = moment.utc().endOf("month").toDate();
+
+    const startOfLastMonth = moment
+      .utc()
+      .subtract(1, "months")
+      .startOf("month")
+      .toDate();
+    const endOfLastMonth = moment
+      .utc()
+      .subtract(1, "months")
+      .endOf("month")
+      .toDate();
+
+    const startOfPrevMonth = moment
+      .utc()
+      .subtract(2, "months")
+      .startOf("month")
+      .toDate();
+    const endOfPrevMonth = moment
+      .utc()
+      .subtract(2, "months")
+      .endOf("month")
+      .toDate();
+
+    // USER STATS
+    const totalUsers = await User.countDocuments();
+
+    const usersLastMonth = await User.countDocuments({
+      createdAt: { $gte: startOfLastMonth, $lte: endOfLastMonth },
+    });
+
+    const usersPrevMonth = await User.countDocuments({
+      createdAt: { $gte: startOfPrevMonth, $lte: endOfPrevMonth },
+    });
+
+    const userGrowthPercent =
+      usersPrevMonth === 0
+        ? null
+        : ((usersLastMonth - usersPrevMonth) / usersPrevMonth) * 100;
+
+    // PENDING CRD STATS
+    const pendingCRDs = await User.countDocuments({
+      is2FAEnabled: true,
+      crdNumber: { $exists: false },
+    });
+
+    const pendingCRDsLastMonth = await User.countDocuments({
+      is2FAEnabled: true,
+      crdNumber: { $exists: false },
+      createdAt: { $gte: startOfLastMonth, $lte: endOfLastMonth },
+    });
+
+    const pendingCRDsPrevMonth = await User.countDocuments({
+      is2FAEnabled: true,
+      crdNumber: { $exists: false },
+      createdAt: { $gte: startOfPrevMonth, $lte: endOfPrevMonth },
+    });
+
+    const crdGrowthPercent =
+      pendingCRDsPrevMonth === 0
+        ? null
+        : ((pendingCRDsLastMonth - pendingCRDsPrevMonth) /
+            pendingCRDsPrevMonth) *
+          100;
+
+    // PENDING REPORT STATS
+    const pendingReports = await Report.countDocuments({
+      isResolved: false,
+    });
+
+    const pendingReportsLastMonth = await Report.countDocuments({
+      isResolved: false,
+      createdAt: { $gte: startOfLastMonth, $lte: endOfLastMonth },
+    });
+
+    const pendingReportsPrevMonth = await Report.countDocuments({
+      isResolved: false,
+      createdAt: { $gte: startOfPrevMonth, $lte: endOfPrevMonth },
+    });
+
+    const reportGrowthPercent =
+      pendingReportsPrevMonth === 0
+        ? null
+        : ((pendingReportsLastMonth - pendingReportsPrevMonth) /
+            pendingReportsPrevMonth) *
+          100;
+
+    // RESPONSE
+    return res.status(200).json({
+      data: {
+        totalUsers,
+        pendingCRDs,
+        pendingReports,
+        growth: {
+          userGrowthPercent: userGrowthPercent?.toFixed(2),
+          crdGrowthPercent: crdGrowthPercent?.toFixed(2),
+          reportGrowthPercent: reportGrowthPercent?.toFixed(2),
+        },
       },
     });
   }
@@ -289,6 +396,7 @@ const changePassword = TryCatch(
 
 export default {
   login,
+  getDashboardStats,
   getAllUsers,
   updateUserStatus,
   getAllUserComplaints,

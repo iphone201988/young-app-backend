@@ -15,6 +15,12 @@ adminRoutes.get(
   adminController.getAllUsers
 );
 
+adminRoutes.get(
+  "/getDashboardStats",
+  adminAuthenticationMiddleware,
+  adminController.getDashboardStats
+);
+
 adminRoutes.put(
   "/updateUserStatus/:id",
   adminAuthenticationMiddleware,

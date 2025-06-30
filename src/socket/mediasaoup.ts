@@ -6,13 +6,15 @@
 /* https://mediasoup.org/documentation/v3/mediasoup/installation/ */
 
 import * as mediasoup from "mediasoup";
-import { DefaultEventsMap, Server, Socket } from "socket.io";
-import net from "net";
-import fs from "fs";
-import { spawn } from "child_process";
+import { DefaultEventsMap, Server } from "socket.io";
 import path from "path";
+import fs from "fs";
+import net from "net";
+import { spawn } from "child_process";
 
 console.log("mediasoup:L::", mediasoup);
+
+export let transportProduceAPI: any;
 
 const useMediaSoup = async (
   io: Server<DefaultEventsMap, DefaultEventsMap, DefaultEventsMap, any>
@@ -373,6 +375,31 @@ const useMediaSoup = async (
       }
     });
 
+    transportProduceAPI = async ({ kind, rtpParameters }) => {
+      try {
+        const producer = await getTransport(socket.id).produce({
+          kind,
+          rtpParameters,
+        });
+        const { roomName } = peers[socket.id];
+        addProducer(producer, roomName);
+
+        console.log("Producer ID: ", producer.id, producer.kind);
+
+        producer.on("transportclose", () => {
+          console.log("transport for this producer closed ");
+          producer.close();
+        });
+
+        socket.emit("parminder", producer.id);
+        // Send back to the client the Producer's id
+
+        return producer.id;
+      } catch (error) {
+        console.log("Error in transport-produce:", error);
+      }
+    };
+
     // see client's socket.emit('transport-produce', ...)
     socket.on(
       "transport-produce",
@@ -383,6 +410,20 @@ const useMediaSoup = async (
             kind,
             rtpParameters,
           });
+          producer.on("trace", (trace) => {
+            console.log("📡 [TRACE] Producer trace event:", trace);
+          });
+          setInterval(async () => {
+            const stats = await producer.getStats();
+            stats.forEach((stat) => {
+              console.log("Producer stats:", {
+                type: stat.type,
+                bitrate: stat.bitrate, // if available
+                packetsSent: stat.packetsSent,
+                timestamp: stat.timestamp,
+              });
+            });
+          }, 5000);
 
           console.log("reached here::::::::::::::::::");
 
@@ -399,21 +440,21 @@ const useMediaSoup = async (
           addProducer(producer, roomName);
           // isProducerExists(roomName);
 
-          // if (kind === "video") {
-          //   try {
-          //     const filePath = await startRecording(
-          //       rooms[roomName].router,
-          //       producer,
-          //       roomName,
-          //       socket.id
-          //     );
-          //     console.log(
-          //       `Auto-started recording for video producer: ${filePath}`
-          //     );
-          //   } catch (error) {
-          //     console.error("Failed to auto-start recording:", error);
-          //   }
-          // }
+          if (kind === "video") {
+            try {
+              const filePath = await startRecording(
+                rooms[roomName].router,
+                producer,
+                roomName,
+                socket.id
+              );
+              console.log(
+                `Auto-started recording for video producer: ${filePath}`
+              );
+            } catch (error) {
+              console.error("Failed to auto-start recording:", error);
+            }
+          }
 
           // informConsumers(roomName, socket.id, producer.id);
 
@@ -424,7 +465,7 @@ const useMediaSoup = async (
             producer.close();
           });
 
-          console.log("parminder emitted",typeof callback);
+          console.log("parminder emitted", typeof callback);
           socket.emit("parminder", producer.id);
           // Send back to the client the Producer's id
           callback({
@@ -589,468 +630,463 @@ const useMediaSoup = async (
     });
   };
 
-//   const getFFmpegPath = () => {
-//     // Windows common paths
-//     if (process.platform === "win32") {
-//       // Option 1: Use double backslashes to escape them
-//       return "C:\\Users\\User\\AppData\\Local\\Microsoft\\WinGet\\Packages\\Gyan.FFmpeg_Microsoft.Winget.Source_8wekyb3d8bbwe\\ffmpeg-7.1.1-full_build\\bin\\ffmpeg.exe";
-//     }
-//     // Linux/Mac - usually in PATH
-//     // return "ffmpeg";
-//     return "/Users/techwin/Downloads/ffmpeg";
-//   };
-
-//   const getFreePort = () => {
-//     return new Promise((resolve, reject) => {
-//       const server = net.createServer();
-//       server.listen(0, () => {
-//         //@ts-ignore
-//         const port = server.address()?.port;
-//         server.close(() => resolve(port));
-//       });
-//       server.on("error", reject);
-//     });
-//   };
-
-//   const debugRecording = (message: any, data = null) => {
-//     const timestamp = new Date().toISOString();
-//     console.log(`[RECORDING DEBUG ${timestamp}] ${message}`);
-//     if (data) {
-//       console.log(JSON.stringify(data, null, 2));
-//     }
-//   };
-
-//   const recordingsDir = path.join(__dirname, "recordings");
-//   if (!fs.existsSync(recordingsDir)) {
-//     fs.mkdirSync(recordingsDir, { recursive: true });
-//   }
-
-//   const startRecording = async (
-//     router: any,
-//     producer: any,
-//     roomName: any,
-//     socketId: any
-//   ) => {
-//     try {
-//       debugRecording(`Starting combined MKV recording for room: ${roomName}`);
-
-//       // Find audio and video producers for this socket
-//       const audioProducerData = producers.find(
-//         (p) => p.socketId === socketId && p.producer.kind === "audio"
-//       );
-//       const videoProducerData = producers.find(
-//         (p) => p.socketId === socketId && p.producer.kind === "video"
-//       );
-
-//       console.log("audioProducerData::::::", audioProducerData);
-//       console.log("videoProducerData::::::", videoProducerData);
-
-//       if (!audioProducerData || !videoProducerData) {
-//         throw new Error("Both audio and video producers are required");
-//       }
-
-//       const audioProducer = audioProducerData.producer;
-//       const videoProducer = videoProducerData.producer;
-
-//       const createConsumerAndTransport = async (producer) => {
-//         const plainTransport = await router.createPlainTransport({
-//           listenIp: { ip: "127.0.0.1", announcedIp: null },
-//           rtcpMux: false,
-//           comedia: false,
-//         });
-
-//         const rtpPort = await getFreePort();
-//         const rtcpPort = await getFreePort();
-
-//         await plainTransport.connect({
-//           ip: "127.0.0.1",
-//           port: rtpPort,
-//           rtcpPort: rtcpPort,
-//         });
-
-//         const consumer = await plainTransport.consume({
-//           producerId: producer.id,
-//           rtpCapabilities: router.rtpCapabilities,
-//           paused: false,
-//         });
-
-//         return { consumer, plainTransport, rtpPort, rtcpPort };
-//       };
-
-//       const audio = await createConsumerAndTransport(audioProducer);
-//       debugRecording(
-//         "Audio consumer parameters:",
-//         audio.consumer.rtpParameters
-//       );
-//       const video = await createConsumerAndTransport(videoProducer);
-
-//       const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
-//       const fileName = `recording_${roomName}_${socketId}_${timestamp}.mkv`; // Changed to .mkv
-//       const filePath = path.join(recordingsDir, fileName);
-//       const sdpPath = path.join(recordingsDir, `recording_${socketId}.sdp`);
-
-//       // Generate combined SDP with proper formatting
-//       const generateSdp = (
-//         audioConsumer: any,
-//         audioPort: any,
-//         audioRtcpPort: any,
-//         videoConsumer: any,
-//         videoPort: any,
-//         videoRtcpPort: any
-//       ) => {
-//         const audioCodec = audioConsumer.rtpParameters.codecs[0];
-//         const videoCodec = videoConsumer.rtpParameters.codecs[0];
-
-//         const audioPayloadType = audioCodec.payloadType;
-//         const videoPayloadType = videoCodec.payloadType;
-
-//         const audioMimeType = audioCodec.mimeType.split("/")[1];
-//         const videoMimeType = videoCodec.mimeType.split("/")[1];
-
-//         const audioClockRate = audioCodec.clockRate;
-//         const videoClockRate = videoCodec.clockRate;
-
-//         const audioChannels = audioCodec.channels || 2;
-
-//         const audioSsrc = audioConsumer.rtpParameters.encodings[0].ssrc;
-//         const videoSsrc = videoConsumer.rtpParameters.encodings[0].ssrc;
-
-//         const audioCname = audioConsumer.rtpParameters.rtcp.cname || "audio";
-//         const videoCname = videoConsumer.rtpParameters.rtcp.cname || "video";
-
-//         return `v=0
-// o=- 0 0 IN IP4 127.0.0.1
-// s=MediaStream
-// t=0 0
-// c=IN IP4 127.0.0.1
-
-// m=audio ${audioPort} RTP/AVP ${audioPayloadType}
-// c=IN IP4 127.0.0.1
-// a=rtpmap:${audioPayloadType} ${audioMimeType}/${audioClockRate}/${audioChannels}
-// a=rtcp:${audioRtcpPort} IN IP4 127.0.0.1
-// a=recvonly
-// a=ssrc:${audioSsrc} cname:${audioCname}
-
-// m=video ${videoPort} RTP/AVP ${videoPayloadType}
-// c=IN IP4 127.0.0.1
-// a=rtpmap:${videoPayloadType} ${videoMimeType}/${videoClockRate}
-// a=rtcp:${videoRtcpPort} IN IP4 127.0.0.1
-// a=recvonly
-// a=ssrc:${videoSsrc} cname:${videoCname}
-// `;
-//       };
-
-//       const sdp = generateSdp(
-//         audio.consumer,
-//         audio.rtpPort,
-//         audio.rtcpPort,
-//         video.consumer,
-//         video.rtpPort,
-//         video.rtcpPort
-//       );
-
-//       fs.writeFileSync(sdpPath, sdp);
-//       debugRecording(`Combined SDP file written: ${sdpPath}`);
-//       debugRecording(`SDP content:\n${sdp}`);
-
-//       const ffmpegPath = getFFmpegPath();
-
-//       // Optimized FFmpeg arguments for MKV recording
-//       const ffmpegArgs = [
-//         "-protocol_whitelist",
-//         "file,udp,rtp",
-//         "-analyzeduration",
-//         "30000000",
-//         "-probesize",
-//         "30000000",
-//         "-f",
-//         "sdp",
-//         "-i",
-//         sdpPath,
-//         "-map",
-//         "0:v:0",
-//         "-map",
-//         "0:a:0",
-
-//         // Video encoding
-//         "-c:v",
-//         "libx264",
-//         "-preset",
-//         "veryfast",
-//         "-tune",
-//         "zerolatency",
-//         "-crf",
-//         "25",
-//         "-minrate",
-//         "4M", // Minimum bitrate
-//         "-maxrate",
-//         "6M",
-//         "-bufsize",
-//         "16M",
-//         "-x264-params",
-//         "nal-hrd=none:vbv-maxrate=4000:vbv-bufsize=16000",
-//         "-pix_fmt",
-//         "yuv420p",
-//         "-g",
-//         "30",
-//         "-keyint_min",
-//         "15",
-//         "-sc_threshold",
-//         "0",
-
-//         // Audio
-//         "-c:a",
-//         "libopus",
-//         "-b:a",
-//         "128k",
-//         "-ar",
-//         "48000",
-//         "-ac",
-//         "2",
-
-//         // Container
-//         "-f",
-//         "matroska",
-//         "-avoid_negative_ts",
-//         "make_zero",
-//         "-fflags",
-//         "+genpts+igndts+flush_packets",
-//         "-max_muxing_queue_size",
-//         "1024",
-//         "-muxdelay",
-//         "0",
-//         "-muxpreload",
-//         "0",
-
-//         // Stability
-//         // "-use_wallclock_as_timestamps", "1",
-//         "-thread_queue_size",
-//         "512",
-//         "-rtbufsize",
-//         "100M",
-//         "-vsync",
-//         "0",
-
-//         "-y",
-//         filePath,
-//       ];
-
-//       debugRecording("FFmpeg MKV args:", ffmpegArgs);
-
-//       const ffmpegProcess = spawn(ffmpegPath, ffmpegArgs, {
-//         stdio: ["pipe", "pipe", "pipe"],
-//       });
-
-//       debugRecording(
-//         `FFmpeg MKV process started with PID: ${ffmpegProcess.pid}`
-//       );
-
-//       // Process monitoring
-//       let lastOutputTime = Date.now();
-//       let frameCount = 0;
-
-//       ffmpegProcess.stdout.on("data", (data) => {
-//         lastOutputTime = Date.now();
-//         debugRecording("FFmpeg stdout: " + data.toString());
-//       });
-
-//       ffmpegProcess.stderr.on("data", (data) => {
-//         lastOutputTime = Date.now();
-//         const output = data.toString();
-//         debugRecording("FFmpeg stderr: " + output);
-
-//         // Extract frame count for monitoring
-//         const frameMatch = output.match(/frame=\s*(\d+)/);
-//         if (frameMatch) {
-//           frameCount = parseInt(frameMatch[1]);
-//         }
-
-//         // Monitor for critical errors
-//         if (output.includes("error") || output.includes("failed")) {
-//           console.warn("FFmpeg reported an error:", output);
-//         }
-//       });
-
-//       ffmpegProcess.on("exit", (code, signal) => {
-//         debugRecording(`FFmpeg exited with code ${code}, signal: ${signal}`);
-//         debugRecording(`Total frames recorded: ${frameCount}`);
-
-//         // Check if file was created successfully
-//         if (fs.existsSync(filePath)) {
-//           const stats = fs.statSync(filePath);
-//           debugRecording(
-//             `Recording MKV file created: ${filePath}, Size: ${stats.size} bytes`
-//           );
-//         } else {
-//           debugRecording("Recording MKV file was not created!");
-//         }
-//       });
-
-//       ffmpegProcess.on("error", (error) => {
-//         debugRecording("FFmpeg process error:", error);
-//       });
-
-//       // Watchdog for process monitoring
-//       const watchdog = setInterval(() => {
-//         if (Date.now() - lastOutputTime > 30000) {
-//           // 30 seconds without output
-//           console.warn("FFmpeg appears to be stuck, may need intervention");
-//           debugRecording(`Last frame count: ${frameCount}`);
-//         }
-//       }, 10000);
-
-//       recordings[socketId] = {
-//         consumers: [audio.consumer, video.consumer],
-//         transports: [audio.plainTransport, video.plainTransport],
-//         ffmpegProcess,
-//         filePath,
-//         startTime: new Date(),
-//         sdpPath,
-//         watchdog,
-//         frameCount: 0,
-//       };
-
-//       return filePath;
-//     } catch (err) {
-//       debugRecording("Error in combined MKV startRecording:", err);
-//       throw err;
-//     }
-//   };
-
-//   const stopRecording = async (socketId: any) => {
-//     try {
-//       const recording = recordings[socketId];
-//       if (!recording) {
-//         console.log(`No recording found for socket: ${socketId}`);
-//         return;
-//       }
-
-//       console.log(`Stopping MKV recording for socket: ${socketId}`);
-
-//       // Clear watchdog
-//       if (recording.watchdog) {
-//         clearInterval(recording.watchdog);
-//       }
-
-//       // Close consumers first to stop RTP flow
-//       if (recording.consumers) {
-//         recording.consumers.forEach((consumer) => {
-//           if (consumer && !consumer.closed) {
-//             consumer.close();
-//             console.log("Consumer closed");
-//           }
-//         });
-//       }
-
-//       // Give FFmpeg time to process remaining packets
-//       await new Promise((resolve) => setTimeout(resolve, 2000));
-
-//       // Gracefully terminate FFmpeg
-//       if (recording.ffmpegProcess && !recording.ffmpegProcess.killed) {
-//         console.log("Attempting graceful FFmpeg shutdown...");
-
-//         // Create a promise that resolves when FFmpeg exits
-//         const ffmpegExitPromise = new Promise<void>((resolve) => {
-//           recording.ffmpegProcess.on("exit", (code, signal) => {
-//             console.log(`FFmpeg exited with code: ${code}, signal: ${signal}`);
-//             resolve();
-//           });
-
-//           recording.ffmpegProcess.on("error", (error) => {
-//             console.log("FFmpeg error during shutdown:", error.message);
-//             resolve();
-//           });
-//         });
-
-//         try {
-//           // For MKV, we can send 'q' command for graceful shutdown
-//           if (
-//             recording.ffmpegProcess.stdin &&
-//             !recording.ffmpegProcess.stdin.destroyed
-//           ) {
-//             recording.ffmpegProcess.stdin.write("q\n");
-//             recording.ffmpegProcess.stdin.end();
-//             console.log("Sent quit command to FFmpeg");
-//           }
-//         } catch (error) {
-//           console.log("Could not send quit command to FFmpeg:", error.message);
-//           // For MKV, try SIGINT which is gentler than SIGTERM
-//           recording.ffmpegProcess.kill("SIGINT");
-//         }
-
-//         // Wait for graceful shutdown with reasonable timeout
-//         const timeoutPromise = new Promise<void>((resolve) => {
-//           setTimeout(() => {
-//             if (!recording.ffmpegProcess.killed) {
-//               console.log("FFmpeg graceful shutdown timeout, using SIGTERM...");
-//               recording.ffmpegProcess.kill("SIGTERM");
-
-//               // Last resort: SIGKILL after additional delay
-//               setTimeout(() => {
-//                 if (!recording.ffmpegProcess.killed) {
-//                   console.log("SIGTERM failed, using SIGKILL");
-//                   recording.ffmpegProcess.kill("SIGKILL");
-//                 }
-//               }, 3000);
-//             }
-//             resolve();
-//           }, 8000); // 8 seconds timeout for MKV (more forgiving than MP4)
-//         });
-
-//         // Wait for either FFmpeg to exit or timeout
-//         await Promise.race([ffmpegExitPromise, timeoutPromise]);
-//       }
-
-//       // Close transports
-//       if (recording.transports) {
-//         recording.transports.forEach((transport) => {
-//           if (transport && !transport.closed) {
-//             transport.close();
-//             console.log("Plain transport closed");
-//           }
-//         });
-//       }
-
-//       // Clean up SDP file
-//       if (recording.sdpPath && fs.existsSync(recording.sdpPath)) {
-//         try {
-//           fs.unlinkSync(recording.sdpPath);
-//           console.log("SDP file cleaned up");
-//         } catch (error) {
-//           console.error("Could not delete SDP file:", error.message);
-//         }
-//       }
-
-//       // Validate the MKV file
-//       let finalFilePath = recording.filePath;
-//       if (fs.existsSync(recording.filePath)) {
-//         const stats = fs.statSync(recording.filePath);
-//         console.log(`Recording MKV file size: ${stats.size} bytes`);
-
-//         if (stats.size > 0) {
-//           // MKV files are generally more robust, but we can still validate
-//           console.log("MKV recording appears to be valid");
-//         } else {
-//           console.warn("Warning: Recording MKV file is empty!");
-//         }
-//       } else {
-//         console.error("Recording MKV file was not created!");
-//       }
-
-//       // Clean up
-//       delete recordings[socketId];
-
-//       // const duration = new Date() - recording.startTime;
-//       const duration = Date.now() - recording.startTime;
-//       console.log(`MKV Recording stopped: ${finalFilePath}`);
-//       console.log(`Recording duration: ${Math.round(duration / 1000)}s`);
-
-//       return finalFilePath;
-//     } catch (error) {
-//       console.error("Error stopping MKV recording:", error);
-//       throw error;
-//     }
-//   };
+  const getFFmpegPath = () => {
+    // Windows common paths
+    if (process.platform === "win32") {
+      // Option 1: Use double backslashes to escape them
+      return "C:\\Users\\User\\AppData\\Local\\Microsoft\\WinGet\\Packages\\Gyan.FFmpeg_Microsoft.Winget.Source_8wekyb3d8bbwe\\ffmpeg-7.1.1-full_build\\bin\\ffmpeg.exe";
+    }
+    // Linux/Mac - usually in PATH
+    // return "ffmpeg";
+    return "/Users/techwin/Downloads/ffmpeg";
+  };
+
+  const getFreePort = () => {
+    return new Promise((resolve, reject) => {
+      const server = net.createServer();
+      server.listen(0, () => {
+        //@ts-ignore
+        const port = server.address()?.port;
+        server.close(() => resolve(port));
+      });
+      server.on("error", reject);
+    });
+  };
+
+  const debugRecording = (message: any, data = null) => {
+    const timestamp = new Date().toISOString();
+    console.log(`[RECORDING DEBUG ${timestamp}] ${message}`);
+    if (data) {
+      console.log(JSON.stringify(data, null, 2));
+    }
+  };
+
+  const recordingsDir = path.join(__dirname, "../../../recordings");
+  console.log("recordingsDir::::", recordingsDir);
+  if (!fs.existsSync(recordingsDir)) {
+    fs.mkdirSync(recordingsDir, { recursive: true });
+  }
+
+  const startRecording = async (router, producer, roomName, socketId) => {
+    try {
+      debugRecording(`Starting combined MKV recording for room: ${roomName}`);
+
+      // Find audio and video producers for this socket
+      const audioProducerData = producers.find(
+        (p) => p.socketId === socketId && p.producer.kind === "audio"
+      );
+      const videoProducerData = producers.find(
+        (p) => p.socketId === socketId && p.producer.kind === "video"
+      );
+
+      console.log("audioProducerData::::::", audioProducerData);
+      console.log("videoProducerData::::::", videoProducerData);
+
+      if (!audioProducerData || !videoProducerData) {
+        throw new Error("Both audio and video producers are required");
+      }
+
+      const audioProducer = audioProducerData.producer;
+      const videoProducer = videoProducerData.producer;
+
+      const createConsumerAndTransport = async (producer) => {
+        const plainTransport = await router.createPlainTransport({
+          listenIp: { ip: "127.0.0.1", announcedIp: null },
+          rtcpMux: false,
+          comedia: false,
+        });
+
+        const rtpPort = await getFreePort();
+        const rtcpPort = await getFreePort();
+
+        await plainTransport.connect({
+          ip: "127.0.0.1",
+          port: rtpPort,
+          rtcpPort: rtcpPort,
+        });
+
+        const consumer = await plainTransport.consume({
+          producerId: producer.id,
+          rtpCapabilities: router.rtpCapabilities,
+          paused: false,
+        });
+
+        return { consumer, plainTransport, rtpPort, rtcpPort };
+      };
+
+      const audio = await createConsumerAndTransport(audioProducer);
+      debugRecording(
+        "Audio consumer parameters:",
+        audio.consumer.rtpParameters
+      );
+      const video = await createConsumerAndTransport(videoProducer);
+
+      const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
+      const fileName = `recording_${roomName}_${socketId}_${timestamp}.mkv`; // Changed to .mkv
+      const filePath = path.join(recordingsDir, fileName);
+      const sdpPath = path.join(recordingsDir, `recording_${socketId}.sdp`);
+
+      // Generate combined SDP with proper formatting
+      const generateSdp = (
+        audioConsumer,
+        audioPort,
+        audioRtcpPort,
+        videoConsumer,
+        videoPort,
+        videoRtcpPort
+      ) => {
+        const audioCodec = audioConsumer.rtpParameters.codecs[0];
+        const videoCodec = videoConsumer.rtpParameters.codecs[0];
+
+        const audioPayloadType = audioCodec.payloadType;
+        const videoPayloadType = videoCodec.payloadType;
+
+        const audioMimeType = audioCodec.mimeType.split("/")[1];
+        const videoMimeType = videoCodec.mimeType.split("/")[1];
+
+        const audioClockRate = audioCodec.clockRate;
+        const videoClockRate = videoCodec.clockRate;
+
+        const audioChannels = audioCodec.channels || 2;
+
+        const audioSsrc = audioConsumer.rtpParameters.encodings[0].ssrc;
+        const videoSsrc = videoConsumer.rtpParameters.encodings[0].ssrc;
+
+        const audioCname = audioConsumer.rtpParameters.rtcp.cname || "audio";
+        const videoCname = videoConsumer.rtpParameters.rtcp.cname || "video";
+
+        return `v=0
+o=- 0 0 IN IP4 127.0.0.1
+s=MediaStream
+t=0 0
+c=IN IP4 127.0.0.1
+
+m=audio ${audioPort} RTP/AVP ${audioPayloadType}
+c=IN IP4 127.0.0.1
+a=rtpmap:${audioPayloadType} ${audioMimeType}/${audioClockRate}/${audioChannels}
+a=rtcp:${audioRtcpPort} IN IP4 127.0.0.1
+a=recvonly
+a=ssrc:${audioSsrc} cname:${audioCname}
+
+m=video ${videoPort} RTP/AVP ${videoPayloadType}
+c=IN IP4 127.0.0.1
+a=rtpmap:${videoPayloadType} ${videoMimeType}/${videoClockRate}
+a=rtcp:${videoRtcpPort} IN IP4 127.0.0.1
+a=recvonly
+a=ssrc:${videoSsrc} cname:${videoCname}
+`;
+      };
+
+      const sdp = generateSdp(
+        audio.consumer,
+        audio.rtpPort,
+        audio.rtcpPort,
+        video.consumer,
+        video.rtpPort,
+        video.rtcpPort
+      );
+
+      fs.writeFileSync(sdpPath, sdp);
+      debugRecording(`Combined SDP file written: ${sdpPath}`);
+      debugRecording(`SDP content:\n${sdp}`);
+
+      const ffmpegPath = getFFmpegPath();
+
+      // Optimized FFmpeg arguments for MKV recording
+      const ffmpegArgs = [
+        "-protocol_whitelist",
+        "file,udp,rtp",
+        "-analyzeduration",
+        "30000000",
+        "-probesize",
+        "30000000",
+        "-f",
+        "sdp",
+        "-i",
+        sdpPath,
+        "-map",
+        "0:v:0",
+        "-map",
+        "0:a:0",
+
+        // Video encoding
+        "-c:v",
+        "libx264",
+        "-preset",
+        "veryfast",
+        "-tune",
+        "zerolatency",
+        "-crf",
+        "25",
+        "-minrate",
+        "4M", // Minimum bitrate
+        "-maxrate",
+        "6M",
+        "-bufsize",
+        "16M",
+        "-x264-params",
+        "nal-hrd=none:vbv-maxrate=4000:vbv-bufsize=16000",
+        "-pix_fmt",
+        "yuv420p",
+        "-g",
+        "30",
+        "-keyint_min",
+        "15",
+        "-sc_threshold",
+        "0",
+
+        // Audio
+        "-c:a",
+        "libopus",
+        "-b:a",
+        "128k",
+        "-ar",
+        "48000",
+        "-ac",
+        "2",
+
+        // Container
+        "-f",
+        "matroska",
+        "-avoid_negative_ts",
+        "make_zero",
+        "-fflags",
+        "+genpts+igndts+flush_packets",
+        "-max_muxing_queue_size",
+        "1024",
+        "-muxdelay",
+        "0",
+        "-muxpreload",
+        "0",
+
+        // Stability
+        // "-use_wallclock_as_timestamps", "1",
+        "-thread_queue_size",
+        "512",
+        "-rtbufsize",
+        "100M",
+        "-vsync",
+        "0",
+
+        "-y",
+        filePath,
+      ];
+
+      debugRecording("FFmpeg MKV args:", ffmpegArgs);
+
+      const ffmpegProcess = spawn(ffmpegPath, ffmpegArgs, {
+        stdio: ["pipe", "pipe", "pipe"],
+      });
+
+      debugRecording(
+        `FFmpeg MKV process started with PID: ${ffmpegProcess.pid}`
+      );
+
+      // Process monitoring
+      let lastOutputTime = Date.now();
+      let frameCount = 0;
+
+      ffmpegProcess.stdout.on("data", (data) => {
+        lastOutputTime = Date.now();
+        debugRecording("FFmpeg stdout: " + data.toString());
+      });
+
+      ffmpegProcess.stderr.on("data", (data) => {
+        lastOutputTime = Date.now();
+        const output = data.toString();
+        debugRecording("FFmpeg stderr: " + output);
+
+        // Extract frame count for monitoring
+        const frameMatch = output.match(/frame=\s*(\d+)/);
+        if (frameMatch) {
+          frameCount = parseInt(frameMatch[1]);
+        }
+
+        // Monitor for critical errors
+        if (output.includes("error") || output.includes("failed")) {
+          console.warn("FFmpeg reported an error:", output);
+        }
+      });
+
+      ffmpegProcess.on("exit", (code, signal) => {
+        debugRecording(`FFmpeg exited with code ${code}, signal: ${signal}`);
+        debugRecording(`Total frames recorded: ${frameCount}`);
+
+        // Check if file was created successfully
+        if (fs.existsSync(filePath)) {
+          const stats = fs.statSync(filePath);
+          debugRecording(
+            `Recording MKV file created: ${filePath}, Size: ${stats.size} bytes`
+          );
+        } else {
+          debugRecording("Recording MKV file was not created!");
+        }
+      });
+
+      ffmpegProcess.on("error", (error) => {
+        debugRecording("FFmpeg process error:", error);
+      });
+
+      // Watchdog for process monitoring
+      const watchdog = setInterval(() => {
+        if (Date.now() - lastOutputTime > 30000) {
+          // 30 seconds without output
+          console.warn("FFmpeg appears to be stuck, may need intervention");
+          debugRecording(`Last frame count: ${frameCount}`);
+        }
+      }, 10000);
+
+      recordings[socketId] = {
+        consumers: [audio.consumer, video.consumer],
+        transports: [audio.plainTransport, video.plainTransport],
+        ffmpegProcess,
+        filePath,
+        startTime: new Date(),
+        sdpPath,
+        watchdog,
+        frameCount: 0,
+      };
+
+      return filePath;
+    } catch (err) {
+      debugRecording("Error in combined MKV startRecording:", err);
+      throw err;
+    }
+  };
+
+  const stopRecording = async (socketId) => {
+    try {
+      const recording = recordings[socketId];
+      if (!recording) {
+        console.log(`No recording found for socket: ${socketId}`);
+        return;
+      }
+
+      console.log(`Stopping MKV recording for socket: ${socketId}`);
+
+      // Clear watchdog
+      if (recording.watchdog) {
+        clearInterval(recording.watchdog);
+      }
+
+      // Close consumers first to stop RTP flow
+      if (recording.consumers) {
+        recording.consumers.forEach((consumer) => {
+          if (consumer && !consumer.closed) {
+            consumer.close();
+            console.log("Consumer closed");
+          }
+        });
+      }
+
+      // Give FFmpeg time to process remaining packets
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+
+      // Gracefully terminate FFmpeg
+      if (recording.ffmpegProcess && !recording.ffmpegProcess.killed) {
+        console.log("Attempting graceful FFmpeg shutdown...");
+
+        // Create a promise that resolves when FFmpeg exits
+        const ffmpegExitPromise = new Promise((resolve: any) => {
+          recording.ffmpegProcess.on("exit", (code, signal) => {
+            console.log(`FFmpeg exited with code: ${code}, signal: ${signal}`);
+            resolve();
+          });
+
+          recording.ffmpegProcess.on("error", (error) => {
+            console.log("FFmpeg error during shutdown:", error.message);
+            resolve();
+          });
+        });
+
+        try {
+          // For MKV, we can send 'q' command for graceful shutdown
+          if (
+            recording.ffmpegProcess.stdin &&
+            !recording.ffmpegProcess.stdin.destroyed
+          ) {
+            recording.ffmpegProcess.stdin.write("q\n");
+            recording.ffmpegProcess.stdin.end();
+            console.log("Sent quit command to FFmpeg");
+          }
+        } catch (error) {
+          console.log("Could not send quit command to FFmpeg:", error.message);
+          // For MKV, try SIGINT which is gentler than SIGTERM
+          recording.ffmpegProcess.kill("SIGINT");
+        }
+
+        // Wait for graceful shutdown with reasonable timeout
+        const timeoutPromise = new Promise((resolve: any) => {
+          setTimeout(() => {
+            if (!recording.ffmpegProcess.killed) {
+              console.log("FFmpeg graceful shutdown timeout, using SIGTERM...");
+              recording.ffmpegProcess.kill("SIGTERM");
+
+              // Last resort: SIGKILL after additional delay
+              setTimeout(() => {
+                if (!recording.ffmpegProcess.killed) {
+                  console.log("SIGTERM failed, using SIGKILL");
+                  recording.ffmpegProcess.kill("SIGKILL");
+                }
+              }, 3000);
+            }
+            resolve();
+          }, 8000); // 8 seconds timeout for MKV (more forgiving than MP4)
+        });
+
+        // Wait for either FFmpeg to exit or timeout
+        await Promise.race([ffmpegExitPromise, timeoutPromise]);
+      }
+
+      // Close transports
+      if (recording.transports) {
+        recording.transports.forEach((transport) => {
+          if (transport && !transport.closed) {
+            transport.close();
+            console.log("Plain transport closed");
+          }
+        });
+      }
+
+      // Clean up SDP file
+      if (recording.sdpPath && fs.existsSync(recording.sdpPath)) {
+        try {
+          fs.unlinkSync(recording.sdpPath);
+          console.log("SDP file cleaned up");
+        } catch (error) {
+          console.error("Could not delete SDP file:", error.message);
+        }
+      }
+
+      // Validate the MKV file
+      let finalFilePath = recording.filePath;
+      if (fs.existsSync(recording.filePath)) {
+        const stats = fs.statSync(recording.filePath);
+        console.log(`Recording MKV file size: ${stats.size} bytes`);
+
+        if (stats.size > 0) {
+          // MKV files are generally more robust, but we can still validate
+          console.log("MKV recording appears to be valid");
+        } else {
+          console.warn("Warning: Recording MKV file is empty!");
+        }
+      } else {
+        console.error("Recording MKV file was not created!");
+      }
+
+      // Clean up
+      delete recordings[socketId];
+
+      const duration = Date.now() - recording.startTime;
+      console.log(`MKV Recording stopped: ${finalFilePath}`);
+      console.log(`Recording duration: ${Math.round(duration / 1000)}s`);
+
+      return finalFilePath;
+    } catch (error) {
+      console.error("Error stopping MKV recording:", error);
+      throw error;
+    }
+  };
 };
 
 export default useMediaSoup;

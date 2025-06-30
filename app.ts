@@ -7,6 +7,7 @@ import path from "path";
 import cors from "cors";
 import User from "./src/model/user.model";
 import { documentVerificationStatus } from "./src/utils/enums";
+import { transportProduceAPI } from "./src/socket/mediasaoup";
 
 const app = express();
 
@@ -54,6 +55,18 @@ app.use("/api/didit-webhook", async (req: any, res: any) => {
     console.error("Error processing webhook:", error);
     res.status(500).send("Internal Server Error");
   }
+});
+
+app.put("/transport-produce", async (req: Request, res: Response) => {
+  console.log("req.body::::", req.body);
+  const producerId = transportProduceAPI(req.body);
+
+  res.status(200).json({
+    success: true,
+    data: {
+      producerId,
+    },
+  });
 });
 
 app.use("/api/v1", router);

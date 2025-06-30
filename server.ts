@@ -3,10 +3,20 @@ import { connectToDB } from "./src/utils/helper";
 import { Server } from "socket.io";
 import { createServer } from "http";
 import useSockets from "./src/socket/socket";
-import https from "httpolyglot";
+// import https from "httpolyglot";
+import https from "https";
 import http from "http";
+import fs from "fs";
 
-const httpServer = http.createServer(app);
+const options = {
+  key: fs.readFileSync("./src/ssl/private.key"),
+  cert: fs.readFileSync("./src/ssl/certificate.crt"),
+  ca: fs.readFileSync("./src/ssl/ca_bundle.crt"),
+};
+
+// const httpServer = http.createServer(app);
+const httpServer = https.createServer(options, app);
+
 const io = new Server(httpServer);
 useSockets(io);
 
