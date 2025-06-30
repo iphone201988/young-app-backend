@@ -638,7 +638,12 @@ const useMediaSoup = async (
     }
     // Linux/Mac - usually in PATH
     // return "ffmpeg";
-    return "/Users/techwin/Downloads/ffmpeg";
+
+    if (process.env.NODE_ENV == "local") {
+      return "/Users/techwin/Downloads/ffmpeg";
+    } else {
+      return "/usr/bin/ffmpeg";
+    }
   };
 
   const getFreePort = () => {
