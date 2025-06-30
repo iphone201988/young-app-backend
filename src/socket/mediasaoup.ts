@@ -45,7 +45,7 @@ const useMediaSoup = async (
         // rtcMaxPort: 2020,
         rtcMinPort: 40000,
         rtcMaxPort: 49999,
-        rtcAnnouncedIPv4:"3.148.147.103"
+        // rtcAnnouncedIPv4:"3.148.147.103"
       });
       console.log(`worker pid ${worker.pid}`);
 
