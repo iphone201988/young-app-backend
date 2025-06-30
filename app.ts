@@ -57,7 +57,7 @@ app.use("/api/didit-webhook", async (req: any, res: any) => {
   }
 });
 
-app.put("/transport-produce", async (req: Request, res: Response) => {
+app.post("/transport-produce", async (req: Request, res: Response) => {
   console.log("req.body::::", req.body);
   const producerId = transportProduceAPI(req.body);
 
