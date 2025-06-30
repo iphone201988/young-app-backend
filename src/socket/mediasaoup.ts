@@ -41,10 +41,11 @@ const useMediaSoup = async (
   const createWorker = async () => {
     try {
       worker = await mediasoup.createWorker({
-        rtcMinPort: 2000,
-        rtcMaxPort: 2020,
-        // rtcMinPort: 40000,
-        // rtcMaxPort: 49999,
+        // rtcMinPort: 2000,
+        // rtcMaxPort: 2020,
+        rtcMinPort: 40000,
+        rtcMaxPort: 49999,
+        rtcAnnouncedIPv4:"3.148.147.103"
       });
       console.log(`worker pid ${worker.pid}`);
 
@@ -614,8 +615,8 @@ const useMediaSoup = async (
         const webRtcTransport_options = {
           listenIps: [
             {
-              ip: "3.148.147.103", // replace with relevant IP address
-              announcedIp: 'null',
+              ip: "172.31.12.187", // replace with relevant IP address
+              announcedIp: '3.148.147.103',
               // ip: "0.0.0.0", // replace with relevant IP address
               // announcedIp: "127.0.0.1",
             },
