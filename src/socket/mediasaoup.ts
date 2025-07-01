@@ -41,11 +41,12 @@ const useMediaSoup = async (
   const createWorker = async () => {
     try {
       worker = await mediasoup.createWorker({
-        // rtcMinPort: 2000,
-        // rtcMaxPort: 2020,
-        rtcMinPort: 40000,
-        rtcMaxPort: 49999,
-        // rtcAnnouncedIPv4:"3.148.147.103"
+        // Local
+        rtcMinPort: 2000,
+        rtcMaxPort: 2020,
+        // Server
+        // rtcMinPort: 40000,
+        // rtcMaxPort: 49999,
       });
       console.log(`worker pid ${worker.pid}`);
 
@@ -385,23 +386,21 @@ const useMediaSoup = async (
         const { roomName } = peers[socket.id];
         addProducer(producer, roomName);
 
-        if (kind === "video") {
-          try {
-            const filePath = await startRecording(
-              rooms[roomName].router,
-              producer,
-              roomName,
-              socket.id
-            );
-            console.log(
-              `Auto-started recording for video producer: ${filePath}`
-            );
-          } catch (error) {
-            console.error("Failed to auto-start recording:", error);
-          }
-        }
-
-
+        // if (kind === "video") {
+        //   try {
+        //     const filePath = await startRecording(
+        //       rooms[roomName].router,
+        //       producer,
+        //       roomName,
+        //       socket.id
+        //     );
+        //     console.log(
+        //       `Auto-started recording for video producer: ${filePath}`
+        //     );
+        //   } catch (error) {
+        //     console.error("Failed to auto-start recording:", error);
+        //   }
+        // }
 
         console.log("Producer ID: ", producer.id, producer.kind);
 
@@ -459,21 +458,21 @@ const useMediaSoup = async (
           addProducer(producer, roomName);
           // isProducerExists(roomName);
 
-          if (kind === "video") {
-            try {
-              const filePath = await startRecording(
-                rooms[roomName].router,
-                producer,
-                roomName,
-                socket.id
-              );
-              console.log(
-                `Auto-started recording for video producer: ${filePath}`
-              );
-            } catch (error) {
-              console.error("Failed to auto-start recording:", error);
-            }
-          }
+          // if (kind === "video") {
+          //   try {
+          //     const filePath = await startRecording(
+          //       rooms[roomName].router,
+          //       producer,
+          //       roomName,
+          //       socket.id
+          //     );
+          //     console.log(
+          //       `Auto-started recording for video producer: ${filePath}`
+          //     );
+          //   } catch (error) {
+          //     console.error("Failed to auto-start recording:", error);
+          //   }
+          // }
 
           // informConsumers(roomName, socket.id, producer.id);
 
@@ -615,8 +614,10 @@ const useMediaSoup = async (
         const webRtcTransport_options = {
           listenIps: [
             {
+              // Server
               ip: "172.31.12.187", // replace with relevant IP address
               announcedIp: '3.148.147.103',
+              // Local
               // ip: "0.0.0.0", // replace with relevant IP address
               // announcedIp: "127.0.0.1",
             },
@@ -715,8 +716,8 @@ const useMediaSoup = async (
 
       const createConsumerAndTransport = async (producer) => {
         const plainTransport = await router.createPlainTransport({
-          // listenIp: { ip: "127.0.0.1", announcedIp: null },
-          listenIp: { ip: "3.148.147.103", announcedIp: null },
+          // listenIp: { ip: "127.0.0.1", announcedIp: null }, // Local
+          listenIp: { ip: "0.0.0.0", announcedIp: "3.148.147.103" }, // Sever
           rtcpMux: false,
           comedia: false,
         });
@@ -725,8 +726,8 @@ const useMediaSoup = async (
         const rtcpPort = await getFreePort();
 
         await plainTransport.connect({
-          // ip: "127.0.0.1",
-          ip: "3.148.147.103",
+          // ip: "127.0.0.1", // Local
+          ip: "3.148.147.103", // Server
           port: rtpPort,
           rtcpPort: rtcpPort,
         });
