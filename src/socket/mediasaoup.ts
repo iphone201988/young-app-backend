@@ -42,11 +42,11 @@ const useMediaSoup = async (
     try {
       worker = await mediasoup.createWorker({
         // Local
-        rtcMinPort: 2000,
-        rtcMaxPort: 2020,
+        // rtcMinPort: 2000,
+        // rtcMaxPort: 2020,
         // Server
-        // rtcMinPort: 40000,
-        // rtcMaxPort: 49999,
+        rtcMinPort: 40000,
+        rtcMaxPort: 49999,
       });
       console.log(`worker pid ${worker.pid}`);
 
@@ -458,21 +458,21 @@ const useMediaSoup = async (
           addProducer(producer, roomName);
           // isProducerExists(roomName);
 
-          // if (kind === "video") {
-          //   try {
-          //     const filePath = await startRecording(
-          //       rooms[roomName].router,
-          //       producer,
-          //       roomName,
-          //       socket.id
-          //     );
-          //     console.log(
-          //       `Auto-started recording for video producer: ${filePath}`
-          //     );
-          //   } catch (error) {
-          //     console.error("Failed to auto-start recording:", error);
-          //   }
-          // }
+          if (kind === "video") {
+            try {
+              const filePath = await startRecording(
+                rooms[roomName].router,
+                producer,
+                roomName,
+                socket.id
+              );
+              console.log(
+                `Auto-started recording for video producer: ${filePath}`
+              );
+            } catch (error) {
+              console.error("Failed to auto-start recording:", error);
+            }
+          }
 
           // informConsumers(roomName, socket.id, producer.id);
 
