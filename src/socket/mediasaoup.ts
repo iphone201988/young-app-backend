@@ -428,7 +428,7 @@ const useMediaSoup = async (
             kind,
             rtpParameters,
           });
-          producer.on("trace", (trace) => {
+          producer.on("trace", (trace) => { 
             console.log("📡 [TRACE] Producer trace event:", trace);
           });
           setInterval(async () => {
@@ -458,21 +458,21 @@ const useMediaSoup = async (
           addProducer(producer, roomName);
           // isProducerExists(roomName);
 
-          if (kind === "video") {
-            try {
-              const filePath = await startRecording(
-                rooms[roomName].router,
-                producer,
-                roomName,
-                socket.id
-              );
-              console.log(
-                `Auto-started recording for video producer: ${filePath}`
-              );
-            } catch (error) {
-              console.error("Failed to auto-start recording:", error);
-            }
-          }
+          // if (kind === "video") {
+          //   try {
+          //     const filePath = await startRecording(
+          //       rooms[roomName].router,
+          //       producer,
+          //       roomName,
+          //       socket.id
+          //     );
+          //     console.log(
+          //       `Auto-started recording for video producer: ${filePath}`
+          //     );
+          //   } catch (error) {
+          //     console.error("Failed to auto-start recording:", error);
+          //   }
+          // }
 
           // informConsumers(roomName, socket.id, producer.id);
 
@@ -726,8 +726,8 @@ const useMediaSoup = async (
         const rtcpPort = await getFreePort();
 
         await plainTransport.connect({
-          // ip: "127.0.0.1", // Local
-          ip: "3.148.147.103", // Server
+          ip: "127.0.0.1", // Local
+          // ip: "3.148.147.103", // Server (no need because we need internal communication)
           port: rtpPort,
           rtcpPort: rtcpPort,
         });
@@ -783,22 +783,22 @@ const useMediaSoup = async (
         const videoCname = videoConsumer.rtpParameters.rtcp.cname || "video";
 
         return `v=0
-o=- 0 0 IN IP4 3.148.147.103
+o=- 0 0 IN IP4 127.0.0.1
 s=MediaStream
 t=0 0
-c=IN IP4 3.148.147.103
+c=IN IP4 127.0.0.1
 
 m=audio ${audioPort} RTP/AVP ${audioPayloadType}
-c=IN IP4 3.148.147.103
+c=IN IP4 127.0.0.1
 a=rtpmap:${audioPayloadType} ${audioMimeType}/${audioClockRate}/${audioChannels}
-a=rtcp:${audioRtcpPort} IN IP4 3.148.147.103
+a=rtcp:${audioRtcpPort} IN IP4 127.0.0.1
 a=recvonly
 a=ssrc:${audioSsrc} cname:${audioCname}
 
 m=video ${videoPort} RTP/AVP ${videoPayloadType}
-c=IN IP4 3.148.147.103
+c=IN IP4 127.0.0.1
 a=rtpmap:${videoPayloadType} ${videoMimeType}/${videoClockRate}
-a=rtcp:${videoRtcpPort} IN IP4 3.148.147.103
+a=rtcp:${videoRtcpPort} IN IP4 127.0.0.1
 a=recvonly
 a=ssrc:${videoSsrc} cname:${videoCname}
 `;
