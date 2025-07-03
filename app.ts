@@ -65,6 +65,13 @@ app.post("/transport-produce", async (req: Request, res: Response) => {
   res.status(200).send(producerId);
 });
 
+
+
+console.log(path.join(__dirname, "../public"))
+
+app.use("/sfu/:room", express.static(path.join(__dirname, "../public")));
+
+
 app.use("/api/v1", router);
 
 app.use(
@@ -73,5 +80,6 @@ app.use(
 );
 
 app.use(errorMiddleware);
+
 
 export default app;

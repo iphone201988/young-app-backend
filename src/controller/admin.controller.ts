@@ -15,6 +15,15 @@ import Report from "../model/report.model";
 import Advertise from "../model/advertise.model";
 import Post from "../model/post.model";
 import moment from "moment";
+import Vault from "../model/vault.model";
+
+const getDateRange = (monthsAgo: number) => ({
+  start: moment.utc().subtract(monthsAgo, "months").startOf("month").toDate(),
+  end: moment.utc().subtract(monthsAgo, "months").endOf("month").toDate(),
+});
+
+const calculateGrowth = (current: number, previous: number) =>
+  previous === 0 ? null : (((current - previous) / previous) * 100).toFixed(2);
 
 const login = TryCatch(
   async (
@@ -43,106 +52,122 @@ const login = TryCatch(
 );
 const getDashboardStats = TryCatch(
   async (req: Request, res: Response, next: NextFunction) => {
-    // Date ranges
-    const startOfThisMonth = moment.utc().startOf("month").toDate();
-    const endOfThisMonth = moment.utc().endOf("month").toDate();
+    const currentYear = moment().year();
+    const currentMonth = moment().month(); // 0-based index
 
-    const startOfLastMonth = moment
-      .utc()
-      .subtract(1, "months")
-      .startOf("month")
-      .toDate();
-    const endOfLastMonth = moment
-      .utc()
-      .subtract(1, "months")
-      .endOf("month")
-      .toDate();
+    const lastMonth = getDateRange(1);
+    const prevMonth = getDateRange(2);
 
-    const startOfPrevMonth = moment
-      .utc()
-      .subtract(2, "months")
-      .startOf("month")
-      .toDate();
-    const endOfPrevMonth = moment
-      .utc()
-      .subtract(2, "months")
-      .endOf("month")
-      .toDate();
+    const [
+      totalUsers,
+      usersLastMonth,
+      usersPrevMonth,
+      pendingCRDs,
+      pendingCRDsLastMonth,
+      pendingCRDsPrevMonth,
+      pendingReports,
+      pendingReportsLastMonth,
+      pendingReportsPrevMonth,
+    ] = await Promise.all([
+      User.countDocuments(),
+      User.countDocuments({
+        createdAt: { $gte: lastMonth.start, $lte: lastMonth.end },
+      }),
+      User.countDocuments({
+        createdAt: { $gte: prevMonth.start, $lte: prevMonth.end },
+      }),
+      User.countDocuments({
+        is2FAEnabled: true,
+        crdNumber: { $exists: false },
+      }),
+      User.countDocuments({
+        is2FAEnabled: true,
+        crdNumber: { $exists: false },
+        createdAt: { $gte: lastMonth.start, $lte: lastMonth.end },
+      }),
+      User.countDocuments({
+        is2FAEnabled: true,
+        crdNumber: { $exists: false },
+        createdAt: { $gte: prevMonth.start, $lte: prevMonth.end },
+      }),
+      Report.countDocuments({ isResolved: false }),
+      Report.countDocuments({
+        isResolved: false,
+        createdAt: { $gte: lastMonth.start, $lte: lastMonth.end },
+      }),
+      Report.countDocuments({
+        isResolved: false,
+        createdAt: { $gte: prevMonth.start, $lte: prevMonth.end },
+      }),
+    ]);
 
-    // USER STATS
-    const totalUsers = await User.countDocuments();
+    const growth = {
+      userGrowthPercent: calculateGrowth(usersLastMonth, usersPrevMonth),
+      crdGrowthPercent: calculateGrowth(
+        pendingCRDsLastMonth,
+        pendingCRDsPrevMonth
+      ),
+      reportGrowthPercent: calculateGrowth(
+        pendingReportsLastMonth,
+        pendingReportsPrevMonth
+      ),
+    };
 
-    const usersLastMonth = await User.countDocuments({
-      createdAt: { $gte: startOfLastMonth, $lte: endOfLastMonth },
-    });
+    // Monthly published post stats (only 'share' and 'stream')
+    const monthlyPostCounts = await Promise.all(
+      Array.from({ length: currentMonth + 1 }).map(async (_, index) => {
+        const start = moment
+          .utc()
+          .year(currentYear)
+          .month(index)
+          .startOf("month")
+          .toDate();
+        const end = moment
+          .utc()
+          .year(currentYear)
+          .month(index)
+          .endOf("month")
+          .toDate();
 
-    const usersPrevMonth = await User.countDocuments({
-      createdAt: { $gte: startOfPrevMonth, $lte: endOfPrevMonth },
-    });
+        const shares = Post.countDocuments({
+          type: postType.SHARE,
+          isPublished: true,
+          isDeleted: false,
+          createdAt: { $gte: start, $lte: end },
+        });
+        const streams = Post.countDocuments({
+          type: postType.STREAM,
+          isPublished: true,
+          isDeleted: false,
+          createdAt: { $gte: start, $lte: end },
+        });
+        const vaults = Vault.countDocuments({
+          isDeleted: false,
+          createdAt: { $gte: start, $lte: end },
+        });
 
-    const userGrowthPercent =
-      usersPrevMonth === 0
-        ? null
-        : ((usersLastMonth - usersPrevMonth) / usersPrevMonth) * 100;
+        const [shareCount, streamCount, vaultCount] = await Promise.all([
+          shares,
+          streams,
+          vaults,
+        ]);
 
-    // PENDING CRD STATS
-    const pendingCRDs = await User.countDocuments({
-      is2FAEnabled: true,
-      crdNumber: { $exists: false },
-    });
+        return {
+          month: moment().month(index).format("MMM"), // e.g., 'Jan', 'Feb'
+          shareCount,
+          streamCount,
+          vaultCount,
+        };
+      })
+    );
 
-    const pendingCRDsLastMonth = await User.countDocuments({
-      is2FAEnabled: true,
-      crdNumber: { $exists: false },
-      createdAt: { $gte: startOfLastMonth, $lte: endOfLastMonth },
-    });
-
-    const pendingCRDsPrevMonth = await User.countDocuments({
-      is2FAEnabled: true,
-      crdNumber: { $exists: false },
-      createdAt: { $gte: startOfPrevMonth, $lte: endOfPrevMonth },
-    });
-
-    const crdGrowthPercent =
-      pendingCRDsPrevMonth === 0
-        ? null
-        : ((pendingCRDsLastMonth - pendingCRDsPrevMonth) /
-            pendingCRDsPrevMonth) *
-          100;
-
-    // PENDING REPORT STATS
-    const pendingReports = await Report.countDocuments({
-      isResolved: false,
-    });
-
-    const pendingReportsLastMonth = await Report.countDocuments({
-      isResolved: false,
-      createdAt: { $gte: startOfLastMonth, $lte: endOfLastMonth },
-    });
-
-    const pendingReportsPrevMonth = await Report.countDocuments({
-      isResolved: false,
-      createdAt: { $gte: startOfPrevMonth, $lte: endOfPrevMonth },
-    });
-
-    const reportGrowthPercent =
-      pendingReportsPrevMonth === 0
-        ? null
-        : ((pendingReportsLastMonth - pendingReportsPrevMonth) /
-            pendingReportsPrevMonth) *
-          100;
-
-    // RESPONSE
     return res.status(200).json({
       data: {
         totalUsers,
         pendingCRDs,
         pendingReports,
-        growth: {
-          userGrowthPercent: userGrowthPercent?.toFixed(2),
-          crdGrowthPercent: crdGrowthPercent?.toFixed(2),
-          reportGrowthPercent: reportGrowthPercent?.toFixed(2),
-        },
+        growth,
+        postsPerMonth: monthlyPostCounts,
       },
     });
   }

@@ -47,6 +47,8 @@ const useMediaSoup = async (
         // Server
         rtcMinPort: 40000,
         rtcMaxPort: 49999,
+        // @ts-ignore
+        rtcAnnouncedIPv4: "3.148.147.103", // Public ip in case of aws server
       });
       console.log(`worker pid ${worker.pid}`);
 
@@ -127,30 +129,30 @@ const useMediaSoup = async (
     //   console.log("joinRoom event received", roomName);
     // });
 
-    socket.on("disconnect", async () => {
-      // do some cleanup
+    // socket.on("disconnect", async () => {
+    //   // do some cleanup
 
-      try {
-        console.log("peer disconnected");
-        // await stopRecording(socket.id);
-        consumers = removeItems(consumers, socket.id, "consumer");
-        producers = removeItems(producers, socket.id, "producer");
-        transports = removeItems(transports, socket.id, "transport");
+    //   try {
+    //     console.log("peer disconnected");
+    //     // await stopRecording(socket.id);
+    //     consumers = removeItems(consumers, socket.id, "consumer");
+    //     producers = removeItems(producers, socket.id, "producer");
+    //     transports = removeItems(transports, socket.id, "transport");
 
-        const { roomName } = peers[socket.id];
-        delete peers[socket.id];
+    //     const { roomName } = peers[socket.id];
+    //     delete peers[socket.id];
 
-        // remove socket from room
-        rooms[roomName] = {
-          router: rooms[roomName].router,
-          peers: rooms[roomName].peers.filter(
-            (socketId) => socketId !== socket.id
-          ),
-        };
-      } catch (error) {
-        console.log("Error in disconnect event:::", error);
-      }
-    });
+    //     // remove socket from room
+    //     rooms[roomName] = {
+    //       router: rooms[roomName].router,
+    //       peers: rooms[roomName].peers.filter(
+    //         (socketId) => socketId !== socket.id
+    //       ),
+    //     };
+    //   } catch (error) {
+    //     console.log("Error in disconnect event:::", error);
+    //   }
+    // });
 
     socket.on("joinRoom", async ({ roomName }, callback) => {
       try {
@@ -369,9 +371,14 @@ const useMediaSoup = async (
     // see client's socket.emit('transport-connect', ...)
     socket.on("transport-connect", ({ dtlsParameters }) => {
       try {
-        console.log("DTLS PARAMS... ", { dtlsParameters });
+        console.log("DTLS PARAMS... ", dtlsParameters);
 
-        getTransport(socket.id).connect({ dtlsParameters });
+        // getTransport(socket.id).connect({
+        //   dtlsParameters: JSON.parse(dtlsParameters.dtlsParameters),
+        // });
+        getTransport(socket.id).connect({
+          dtlsParameters
+        });
       } catch (error) {
         console.log("Error in transport-conne:", error);
       }
@@ -424,24 +431,30 @@ const useMediaSoup = async (
       async ({ kind, rtpParameters, appData }, callback) => {
         try {
           // call produce based on the prameters from the client
+
+          console.log("rtpParameters in transport-produce", rtpParameters);
+          // const producer = await getTransport(socket.id).produce({
+          //   kind,
+          //   rtpParameters: JSON.parse(rtpParameters),
+          // });
           const producer = await getTransport(socket.id).produce({
             kind,
-            rtpParameters,
+            rtpParameters
           });
-          producer.on("trace", (trace) => { 
+          producer.on("trace", (trace) => {
             console.log("📡 [TRACE] Producer trace event:", trace);
           });
-          setInterval(async () => {
-            const stats = await producer.getStats();
-            stats.forEach((stat) => {
-              console.log("Producer stats:", {
-                type: stat.type,
-                bitrate: stat.bitrate, // if available
-                packetsSent: stat.packetsSent,
-                timestamp: stat.timestamp,
-              });
-            });
-          }, 5000);
+          // setInterval(async () => {
+          //   const stats = await producer.getStats();
+          //   stats.forEach((stat) => {
+          //     console.log("Producer stats:", {
+          //       type: stat.type,
+          //       bitrate: stat.bitrate, // if available
+          //       packetsSent: stat.packetsSent,
+          //       timestamp: stat.timestamp,
+          //     });
+          //   });
+          // }, 5000);
 
           console.log("reached here::::::::::::::::::");
 
@@ -530,6 +543,14 @@ const useMediaSoup = async (
           ).transport;
 
           console.log(
+            "consumer data here:::",
+            rtpCapabilities,
+            remoteProducerId,
+            serverConsumerTransportId,
+            consumerTransport
+          );
+
+          console.log(
             "enter in the consume event",
             roomName,
             router.canConsume({
@@ -550,6 +571,8 @@ const useMediaSoup = async (
               rtpCapabilities,
               paused: true,
             });
+
+            console.log("consumer reached here");
 
             consumer.on("transportclose", () => {
               console.log("transport close from consumer");
@@ -616,7 +639,7 @@ const useMediaSoup = async (
             {
               // Server
               ip: "172.31.12.187", // replace with relevant IP address
-              announcedIp: '3.148.147.103',
+              announcedIp: "3.148.147.103",
               // Local
               // ip: "0.0.0.0", // replace with relevant IP address
               // announcedIp: "127.0.0.1",
