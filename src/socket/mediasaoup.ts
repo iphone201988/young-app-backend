@@ -393,21 +393,21 @@ const useMediaSoup = async (
         const { roomName } = peers[socket.id];
         addProducer(producer, roomName);
 
-        if (kind === "video") {
-          try {
-            const filePath = await startRecording(
-              rooms[roomName].router,
-              producer,
-              roomName,
-              socket.id
-            );
-            console.log(
-              `Auto-started recording for video producer: ${filePath}`
-            );
-          } catch (error) {
-            console.error("Failed to auto-start recording:", error);
-          }
-        }
+        // if (kind === "video") {
+        //   try {
+        //     const filePath = await startRecording(
+        //       rooms[roomName].router,
+        //       producer,
+        //       roomName,
+        //       socket.id
+        //     );
+        //     console.log(
+        //       `Auto-started recording for video producer: ${filePath}`
+        //     );
+        //   } catch (error) {
+        //     console.error("Failed to auto-start recording:", error);
+        //   }
+        // }
 
         console.log("Producer ID: ", producer.id, producer.kind);
 
