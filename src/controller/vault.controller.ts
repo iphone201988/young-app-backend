@@ -14,6 +14,7 @@ import ErrorHandler from "../utils/ErrorHandler";
 import Comments from "../model/comments.model";
 import User from "../model/user.model";
 import mongoose from "mongoose";
+import SavedItems from "../model/savedItems.model";
 
 const createVault = TryCatch(
   async (
@@ -179,16 +180,30 @@ const getVaults = TryCatch(
         },
       },
       {
+        $lookup: {
+          from: "saveditems",
+          let: { vaultId: "$_id" },
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $and: [
+                    { $eq: ["$vault", "$$vaultId"] },
+                    { $eq: ["$itemType", postType.VAULT] },
+                    { $eq: ["$userId", new mongoose.Types.ObjectId(userId)] },
+                  ],
+                },
+              },
+            },
+          ],
+          as: "savedItems",
+        },
+      },
+      {
         $addFields: {
           commentsCount: { $size: "$comments" },
           isReported: { $gt: [{ $size: "$isReported" }, 0] },
-          isSaved: {
-            $cond: {
-              if: { $in: ["$_id", user.savedVaults] },
-              then: true,
-              else: false,
-            },
-          },
+          isSaved: { $gt: [{ $size: { $ifNull: ["$savedItems", []] } }, 0] },
         },
       },
       { $sort: { createdAt: -1 } },
@@ -200,6 +215,7 @@ const getVaults = TryCatch(
           access: 0,
           isDeleted: 0,
           comments: 0,
+          savedItems: 0,
         },
       },
     ]);
@@ -248,23 +264,26 @@ const saveUnsaveVault = TryCatch(
     const { userId, user } = req;
     const { vaultId } = req.params;
 
-    await getVaultById(vaultId);
+    const existingSavedVault = await SavedItems.findOne({
+      userId,
+      vault: vaultId,
+      itemType: postType.VAULT,
+    });
 
-    const isSaved = user.savedVaults.includes(vaultId);
-    if (isSaved) {
-      await User.findByIdAndUpdate(userId, {
-        $pull: { savedVaults: vaultId },
-      });
+    if (existingSavedVault) {
+      await SavedItems.deleteOne({ _id: existingSavedVault._id });
     } else {
-      await User.findByIdAndUpdate(userId, {
-        $push: { savedVaults: vaultId },
+      await SavedItems.create({
+        userId,
+        vault: vaultId,
+        itemType: postType.VAULT,
       });
     }
 
     return SUCCESS(
       res,
       200,
-      `Vault ${isSaved ? "unsaved" : "saved"} successfully`,
+      `Vault ${existingSavedVault ? "unsaved" : "saved"} successfully`,
       {
         data: {
           vaultId,
@@ -390,8 +409,16 @@ const getSavedVaults = TryCatch(
     limit = Number(limit);
     const skip = (page - 1) * limit;
 
+    let savedVaults = await SavedItems.find({
+      userId,
+      itemType: postType.VAULT,
+    });
+
+    savedVaults = savedVaults.map((item: any) => item?.vault);
+
+    console.log("savedVaults::::", savedVaults);
     const query: any = {
-      $or: [{ members: userId }, { _id: { $in: user.savedVaults } }],
+      $or: [{ members: userId }, { _id: { $in: savedVaults } }],
       isDeleted: false,
     };
 
@@ -419,6 +446,7 @@ const getSavedVaults = TryCatch(
       {
         $unwind: {
           path: "$admin",
+          preserveNullAndEmptyArrays: true,
         },
       },
       {
@@ -494,6 +522,7 @@ const getSavedVaults = TryCatch(
       {
         $unwind: {
           path: "$admin",
+          preserveNullAndEmptyArrays: true,
         },
       },
       {

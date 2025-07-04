@@ -94,11 +94,11 @@ export interface UserModel extends Document {
   retirement: boolean;
   investmentRealEstate: boolean;
 
-  following: any[];
-  followers: any[];
-  customers: any[];
-  savedPosts: any[];
-  savedVaults: any[];
+  // following: any[];
+  // followers: any[];
+  // customers: any[];
+  // savedPosts: any[];
+  // savedVaults: any[];
 
   subscriptionId: any;
   isDocumentVerified: string;
@@ -177,7 +177,7 @@ export interface ReportsModel extends Document {
   reason: string;
   additionalDetails: string;
   type: string;
-  isResolved:boolean,
+  isResolved: boolean;
   screenshots: string[];
 
   createdAt: Date;

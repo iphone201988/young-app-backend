@@ -105,16 +105,16 @@ const userSchema = new Schema<UserModel>(
     unVerifiedTempCredentials: {
       email: { type: String },
     },
-    following: [{ type: Schema.Types.ObjectId, ref: "user" }],
-    followers: [{ type: Schema.Types.ObjectId, ref: "user" }],
-    customers: [{ type: Schema.Types.ObjectId, ref: "user" }],
+    // following: [{ type: Schema.Types.ObjectId, ref: "user" }],
+    // followers: [{ type: Schema.Types.ObjectId, ref: "user" }],
+    // customers: [{ type: Schema.Types.ObjectId, ref: "user" }],
     ...otherCommonFields,
     ...startupOtherFields,
     ...financialAdvisorOtherFields,
     ...memberOtherFields,
 
-    savedPosts: [{ type: Schema.Types.ObjectId, ref: "post" }],
-    savedVaults: [{ type: Schema.Types.ObjectId, ref: "vault" }],
+    // savedPosts: [{ type: Schema.Types.ObjectId, ref: "post" }],
+    // savedVaults: [{ type: Schema.Types.ObjectId, ref: "vault" }],
     subscriptionId: { type: Schema.Types.ObjectId, ref: "subscription" },
     isDocumentVerified: {
       type: String,

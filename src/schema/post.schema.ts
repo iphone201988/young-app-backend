@@ -63,9 +63,17 @@ const commonSchema = {
   }),
 };
 
+const saveUnsavePostSchema = {
+  params: Joi.object({
+    postId: ObjectIdValidation("Post ID"),
+  }),
+  query: Joi.object({ type: specificStringValidation("Type", postType) }),
+};
+
 export default {
   createPostSchema,
   getPostsSchema,
   addCommentsSchema,
-  commonSchema
+  commonSchema,
+  saveUnsavePostSchema,
 };

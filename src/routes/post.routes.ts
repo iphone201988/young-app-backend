@@ -40,7 +40,7 @@ postRoutes.get(
 postRoutes.put(
   "/saveUnsavePost/:postId",
   authenticationMiddleware,
-  validate(postSchema.commonSchema),
+  validate(postSchema.saveUnsavePostSchema),
   postController.saveUnsavePost
 );
 
@@ -85,6 +85,10 @@ postRoutes.put(
   postController.reSharePost
 );
 
-postRoutes.delete("/:postId", authenticationMiddleware, postController.deletePost);
+postRoutes.delete(
+  "/:postId",
+  authenticationMiddleware,
+  postController.deletePost
+);
 
 export default postRoutes;

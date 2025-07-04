@@ -14,6 +14,7 @@ import User from "../model/user.model";
 import { postType, ratingsType } from "../utils/enums";
 import ErrorHandler from "../utils/ErrorHandler";
 import Ratings from "../model/ratings.model";
+import SavedItems from "../model/savedItems.model";
 
 const createPost = TryCatch(
   async (
@@ -193,20 +194,31 @@ const getPosts = TryCatch(
         },
       },
       {
+        $lookup: {
+          from: "saveditems",
+          let: { postId: "$_id" },
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $and: [
+                    { $eq: ["$item", "$$postId"] },
+                    { $eq: ["$itemType", type] },
+                    { $eq: ["$userId", new mongoose.Types.ObjectId(userId)] },
+                  ],
+                },
+              },
+            },
+          ],
+          as: "savedItems",
+        },
+      },
+      {
         $addFields: {
           commentsCount: { $size: "$comments" },
           likesCount: { $size: "$likedBy" },
           isReported: { $gt: [{ $size: "$isReported" }, 0] },
-          isSaved: {
-            $cond: {
-              if: {
-                // $in: [new mongoose.Types.ObjectId(userId), "$savedByUsers"],
-                $in: ["$_id", user.savedPosts],
-              },
-              then: true,
-              else: false,
-            },
-          },
+          isSaved: { $gt: [{ $size: { $ifNull: ["$savedItems", []] } }, 0] },
           isLiked: {
             $cond: {
               if: {
@@ -230,6 +242,7 @@ const getPosts = TryCatch(
           isDeleted: 0,
           comments: 0,
           likedBy: 0,
+          savedItems: 0,
         },
       },
       {
@@ -291,24 +304,24 @@ const saveUnsavePost = TryCatch(
   async (req: Request<PostIdRequest>, res: Response, next: NextFunction) => {
     const { userId, user } = req;
     const { postId } = req.params;
+    const { type } = req.query;
 
-    await getPostById(postId);
+    const existingSavedPost = await SavedItems.findOne({
+      userId,
+      item: postId,
+      itemType: type,
+    });
 
-    const isSaved = user.savedPosts.includes(postId);
-    if (isSaved) {
-      await User.findByIdAndUpdate(userId, {
-        $pull: { savedPosts: postId },
-      });
+    if (existingSavedPost) {
+      await SavedItems.deleteOne({ _id: existingSavedPost._id });
     } else {
-      await User.findByIdAndUpdate(userId, {
-        $push: { savedPosts: postId },
-      });
+      await SavedItems.create({ userId, item: postId, itemType: type });
     }
 
     return SUCCESS(
       res,
       200,
-      `Post ${isSaved ? "unsaved" : "saved"} successfully`,
+      `Post ${existingSavedPost ? "unsaved" : "saved"} successfully`,
       {
         data: {
           postId,
@@ -362,8 +375,17 @@ const getSavedPosts = TryCatch(
 
     const skip = (page - 1) * limit;
 
+    let savedPosts = await SavedItems.find({
+      userId,
+      itemType: type,
+    });
+
+    savedPosts = savedPosts.map((post: any) => post?.item);
+
+    console.log("savedPosts:::", savedPosts);
+
     const query: any = {
-      _id: { $in: user.savedPosts },
+      _id: { $in: savedPosts },
       type,
       isDeleted: false,
     };

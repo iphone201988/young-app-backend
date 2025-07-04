@@ -41,6 +41,8 @@ import Contact from "../model/contact.model";
 import Ratings from "../model/ratings.model";
 import Chat from "../model/chat.model";
 import Report from "../model/report.model";
+import Followers from "../model/followers.model";
+import { isQuestionOrPlusOrMinusToken } from "typescript";
 
 const registerUser = TryCatch(
   async (
@@ -351,7 +353,7 @@ const loginUser = TryCatch(
     user.lastLogin = new Date();
     await user.save();
 
-    const data = await enable2FA(user, !user.is2FAEnabled);
+    const data = await enable2FA(user, !user?.is2FAEnabled);
 
     return SUCCESS(res, 200, "Please enter the authentication code", {
       data: { ...data, _id: user._id, is2FAEnabled: user.is2FAEnabled },
@@ -385,23 +387,20 @@ const followUnfollowUser = TryCatch(
     const { user } = req;
     const { userId } = req.params;
     const userToFollow = await getUserById(userId);
-    const isFollowing = userToFollow.followers.includes(user._id.toString());
-    console.log("isFollowing::", user._id, userToFollow.followers);
+
+    const isFollowing = await Followers.findOne({
+      userId,
+      follower: userToFollow._id,
+    });
 
     if (isFollowing) {
-      userToFollow.followers = userToFollow.followers.filter(
-        (id: string) => id.toString() != user._id.toString()
-      );
-
-      user.following = user.following.filter(
-        (id: string) => id.toString() != userToFollow._id.toString()
-      );
+      await Followers.deleteOne({ userId, follower: userToFollow._id });
     } else {
-      user.following.push(userToFollow._id);
-      userToFollow.followers.push(user._id);
+      await Followers.create({
+        userId,
+        follower: userToFollow._id,
+      });
     }
-
-    await Promise.all([user.save(), userToFollow.save()]);
 
     return SUCCESS(
       res,
@@ -629,16 +628,19 @@ const updateCustomers = TryCatch(
 
     const user = await getUserById(userId);
 
-    const isAlreadyCustomer = user.customers.includes(loggedInUserId);
-    if (isAlreadyCustomer) {
-      user.customers = user.customers.filter(
-        (id: string) => id != loggedInUserId
-      );
-    } else {
-      user.customers.push(loggedInUserId);
-    }
+    const isAlreadyCustomer = await Followers.findOne({
+      userId: user._id,
+      customer: loggedInUserId,
+    });
 
-    await user.save();
+    if (isAlreadyCustomer) {
+      await Followers.deleteOne({ userId, customer: loggedInUserId });
+    } else {
+      await Followers.create({
+        userId,
+        customer: loggedInUserId,
+      });
+    }
 
     return SUCCESS(
       res,
@@ -682,10 +684,26 @@ const getUserProfile = TryCatch(
     );
 
     if (req.user) {
-      console.log("user.followers::", userProfile.followers, user._id);
-      isFollowed = userProfile.followers.includes(user._id);
-      isConnectedWithProfile = userProfile.customers.includes(user._id);
+      [isFollowed, isConnectedWithProfile] = await Promise.all([
+        Followers.findOne({
+          userId: userProfile._id,
+          followers: user._id,
+        }),
+        Followers.findOne({
+          userId: userProfile._id,
+          customer: user._id,
+        }),
+      ]);
     }
+
+    const [followers, following, customers] = await Promise.all([
+      Followers.countDocuments({ userId }),
+      Followers.countDocuments({ followers: userId }),
+      Followers.countDocuments({
+        userId: userProfile._id,
+        customer: { $exists: true },
+      }),
+    ]);
 
     return SUCCESS(res, 200, "User profile fetched successfully", {
       data: {
@@ -697,9 +715,9 @@ const getUserProfile = TryCatch(
           isFollowed,
           isReported: isReported ? true : false,
           isConnectedWithProfile,
-          customers: userProfile.customers.length,
-          followers: userProfile.followers.length,
-          following: userProfile.following.length,
+          customers,
+          followers,
+          following,
         },
       },
     });
