@@ -342,9 +342,22 @@ const loginUser = TryCatch(
     const isMatched = await user.matchPassword(password);
     if (!isMatched) return next(new ErrorHandler("Invalid credentials", 400));
 
+    const [followers, following, customers] = await Promise.all([
+      Followers.countDocuments({ userId: user._id }),
+      Followers.countDocuments({ followers: user._id }),
+      Followers.countDocuments({
+        userId: user._id,
+        customer: { $exists: true },
+      }),
+    ]);
     if (!user.isRegistrationCompleted) {
       return SUCCESS(res, 200, "Please complete your registration first", {
-        data: { ...filterUser(user.toObject()) },
+        data: {
+          ...filterUser(user.toObject()),
+          followers,
+          following,
+          customers,
+        },
       });
     }
 
