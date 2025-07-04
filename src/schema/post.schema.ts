@@ -30,13 +30,9 @@ const createPostSchema = {
         "string.base": `Symbol must be a string.`,
       }),
 
-    scheduleDate: Joi.date().greater("now").when("type", {
-      is: "stream",
-      then: Joi.required(),
-      otherwise: Joi.optional(),
+    scheduleDate: Joi.date().greater("now").optional().messages({
+      "date.greater": "Schedule Date must be a future date.",
     }),
-  }).messages({
-    "date.greater": "Schedule Date must be a future date.",
   }),
 };
 
