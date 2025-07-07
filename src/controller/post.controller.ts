@@ -98,6 +98,9 @@ const getPosts = TryCatch(
           isDeleted: false,
         },
       },
+      {
+        $sort: { createdAt: -1 },
+      },
       { $skip: skip },
       { $limit: limit },
       {
@@ -244,9 +247,6 @@ const getPosts = TryCatch(
           likedBy: 0,
           savedItems: 0,
         },
-      },
-      {
-        $sort: { createdAt: -1 },
       },
     ]);
 

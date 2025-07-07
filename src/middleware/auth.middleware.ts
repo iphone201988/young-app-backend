@@ -17,7 +17,7 @@ export const authenticationMiddleware = TryCatch(
     if (!decode) return next(new ErrorHandler("Invalid token", 401));
 
     const user = await User.findOne({ _id: decode.userId, isDeleted: false });
-    console.log("user::::", user);
+    // console.log("user::::", user);
     if (!user) return next(new ErrorHandler("User not found", 400));
 
     if (decode.jti !== user.jti)
