@@ -38,7 +38,7 @@ const createPost = TryCatch(
     });
 
     return SUCCESS(res, 201, "Post created successfully", {
-      data: { post: { ...post, userId: undefined } },
+      data: { post: { ...post.toObject(), userId: undefined } },
     });
   }
 );
