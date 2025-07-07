@@ -129,30 +129,90 @@ const useMediaSoup = async (
     //   console.log("joinRoom event received", roomName);
     // });
 
-    // socket.on("disconnect", async () => {
-    //   // do some cleanup
+    const disconnectLiveSession = (socket) => {
+      // console.log("peer disconnected");
 
-    //   try {
-    //     console.log("peer disconnected");
-    //     // await stopRecording(socket.id);
-    //     consumers = removeItems(consumers, socket.id, "consumer");
-    //     producers = removeItems(producers, socket.id, "producer");
-    //     transports = removeItems(transports, socket.id, "transport");
+      const { roomName } = peers[socket.id];
+      console.log("rooms[roomName]::::",rooms[roomName])
+      console.log("isAdmin", rooms[roomName].adminSocket?.id === socket.id);
+      if (rooms[roomName].adminSocket?.id === socket.id) {
+        console.log("producer closed");
+        producers = producers.filter((producerData) => {
+          if (producerData.roomName === roomName) {
+            producerData.producer.close();
+            return false;
+          }
+          return true;
+        });
 
-    //     const { roomName } = peers[socket.id];
-    //     delete peers[socket.id];
+        consumers = consumers.filter((consumerData) => {
+          console.log("consumer closed");
+          if (consumerData.roomName === roomName) {
+            consumerData.consumer.close();
+            return false;
+          }
+          return true;
+        });
 
-    //     // remove socket from room
-    //     rooms[roomName] = {
-    //       router: rooms[roomName].router,
-    //       peers: rooms[roomName].peers.filter(
-    //         (socketId) => socketId !== socket.id
-    //       ),
-    //     };
-    //   } catch (error) {
-    //     console.log("Error in disconnect event:::", error);
-    //   }
-    // });
+        transports = transports.filter((transportData) => {
+          console.log("transport closed");
+          if (transportData.roomName === roomName) {
+            transportData.transport.close();
+            return false;
+          }
+          return true;
+        });
+
+        // socket.to(roomName).emit("liveLeave", {
+        //   data: null,
+        //   message: "Live was done by admin",
+        // });
+
+        socket.to(roomName).emit("admin-disconnected", {
+          message: "Admin has left the room",
+        });
+        delete rooms[roomName];
+        console.log(" All done");
+      } else {
+        consumers = removeItems(consumers, socket.id, "consumer");
+        producers = removeItems(producers, socket.id, "producer");
+        transports = removeItems(transports, socket.id, "transport");
+
+        rooms[roomName].userCount = parseInt(rooms[roomName].userCount) - 1;
+
+        socket.to(roomName).emit("userCountUpdate", rooms[roomName].userCount);
+
+        delete peers[socket.id];
+
+        const updatedListOfPeers = rooms[roomName].peers.filter(
+          (socketId: any) => socketId !== socket.id
+        );
+
+        if (updatedListOfPeers.length) {
+          // remove socket from room
+          rooms[roomName] = {
+            ...rooms[roomName],
+            router: rooms[roomName].router,
+            peers: updatedListOfPeers,
+          };
+        } else {
+          // remove room if no more peers
+          delete rooms[roomName];
+        }
+      }
+    };
+
+    socket.on("disconnect", async () => {
+      // do some cleanup
+
+      try {
+        console.log("peer disconnected");
+        disconnectLiveSession(socket);
+        // await stopRecording(socket.id);
+      } catch (error) {
+        console.log("Error in disconnect event:::", error);
+      }
+    });
 
     socket.on("joinRoom", async ({ roomName }, callback) => {
       try {
@@ -160,6 +220,7 @@ const useMediaSoup = async (
         // create Router if it does not exist
         // const router1 = rooms[roomName] && rooms[roomName].get('data').router || await createRoom(roomName, socket.id)
         const router1 = await createRoom(roomName, socket.id);
+        socket.join(roomName);
 
         const producers = isProducerExists(roomName);
 
@@ -211,10 +272,12 @@ const useMediaSoup = async (
       // appData -> custom application data - we are not supplying any
       // none of the two are required
       let router1;
+      let isNewRoom = true;
       let peers = [];
       if (rooms[roomName]) {
         router1 = rooms[roomName].router;
         peers = rooms[roomName].peers || [];
+        isNewRoom = false;
       } else {
         router1 = await worker.createRouter({ mediaCodecs });
       }
@@ -224,6 +287,7 @@ const useMediaSoup = async (
       rooms[roomName] = {
         router: router1,
         peers: [...peers, socketId],
+        ...(isNewRoom ? { adminSocket: socket } : {}),
       };
 
       return router1;
@@ -377,7 +441,7 @@ const useMediaSoup = async (
         //   dtlsParameters: JSON.parse(dtlsParameters.dtlsParameters),
         // });
         getTransport(socket.id).connect({
-          dtlsParameters
+          dtlsParameters,
         });
       } catch (error) {
         console.log("Error in transport-conne:", error);
@@ -439,7 +503,7 @@ const useMediaSoup = async (
           // });
           const producer = await getTransport(socket.id).produce({
             kind,
-            rtpParameters
+            rtpParameters,
           });
           producer.on("trace", (trace) => {
             console.log("📡 [TRACE] Producer trace event:", trace);
