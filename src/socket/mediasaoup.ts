@@ -13,6 +13,7 @@ import net from "net";
 import { spawn } from "child_process";
 import { PutObjectCommand } from "@aws-sdk/client-s3";
 import { s3 } from "../middleware/multerS3.middleware";
+import Post from "../model/post.model";
 
 console.log("mediasoup:L::", mediasoup);
 
@@ -138,7 +139,7 @@ const useMediaSoup = async (
       console.log("rooms[roomName]::::", rooms[roomName]);
       console.log("isAdmin", rooms[roomName].adminSocket?.id === socket.id);
       if (rooms[roomName].adminSocket?.id === socket.id) {
-        await stopRecording(socket.id);
+        await stopRecording(socket.id, roomName);
         console.log("producer closed");
         producers = producers.filter((producerData) => {
           if (producerData.roomName === roomName) {
@@ -1095,7 +1096,7 @@ a=ssrc:${videoSsrc} cname:${videoCname}
     }
   };
 
-  const stopRecording = async (socketId) => {
+  const stopRecording = async (socketId, roomName) => {
     try {
       const recording = recordings[socketId];
       if (!recording) {
@@ -1209,15 +1210,21 @@ a=ssrc:${videoSsrc} cname:${videoCname}
           // MKV files are generally more robust, but we can still validate
           console.log("MKV recording appears to be valid");
           const s3Key = `recordings/${path.basename(recording.filePath)}`;
-          const s3Url = await uploadToS3(
+          await uploadToS3(
             recording.filePath,
             process.env.AWS_S3_BUCKET,
             s3Key
           );
 
+          const stream = await Post.findById(roomName);
+          if (stream) {
+            stream.streamUrl = s3Key;
+            await stream.save();
+          }
+
           // Delete local file after upload
-          // fs.unlinkSync(recording.filePath);
-          // console.log("Local MKV file deleted after upload.");
+          fs.unlinkSync(recording.filePath);
+          console.log("Local MKV file deleted after upload.");
         } else {
           console.warn("Warning: Recording MKV file is empty!");
         }

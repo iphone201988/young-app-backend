@@ -116,6 +116,7 @@ export interface PostModel extends Document {
   topic: string;
   description: string;
   image: string;
+  streamUrl: string;
   type: string;
   scheduleDate: Date;
   isPublished: boolean;

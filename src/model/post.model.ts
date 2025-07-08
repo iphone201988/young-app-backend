@@ -15,6 +15,7 @@ const postSchema = new Schema<PostModel>(
     image: { type: String },
     type: { type: String, enum: Object.values(postType) },
     scheduleDate: { type: Date },
+    streamUrl: { type: String },
     isPublished: { type: Boolean, default: true },
     isDeleted: { type: Boolean, default: false },
 
