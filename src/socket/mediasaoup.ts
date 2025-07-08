@@ -1218,7 +1218,7 @@ a=ssrc:${videoSsrc} cname:${videoCname}
 
           const stream = await Post.findById(roomName);
           if (stream) {
-            stream.streamUrl = s3Key;
+            stream.streamUrl = "/" + s3Key;
             await stream.save();
           }
 
