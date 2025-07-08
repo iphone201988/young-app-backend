@@ -129,13 +129,14 @@ const useMediaSoup = async (
     //   console.log("joinRoom event received", roomName);
     // });
 
-    const disconnectLiveSession = (socket) => {
+    const disconnectLiveSession = async (socket) => {
       // console.log("peer disconnected");
 
       const { roomName } = peers[socket.id];
-      console.log("rooms[roomName]::::",rooms[roomName])
+      console.log("rooms[roomName]::::", rooms[roomName]);
       console.log("isAdmin", rooms[roomName].adminSocket?.id === socket.id);
       if (rooms[roomName].adminSocket?.id === socket.id) {
+        await stopRecording(socket.id);
         console.log("producer closed");
         producers = producers.filter((producerData) => {
           if (producerData.roomName === roomName) {
@@ -208,7 +209,6 @@ const useMediaSoup = async (
       try {
         console.log("peer disconnected");
         disconnectLiveSession(socket);
-        // await stopRecording(socket.id);
       } catch (error) {
         console.log("Error in disconnect event:::", error);
       }
@@ -535,21 +535,21 @@ const useMediaSoup = async (
           addProducer(producer, roomName);
           // isProducerExists(roomName);
 
-          // if (kind === "video") {
-          //   try {
-          //     const filePath = await startRecording(
-          //       rooms[roomName].router,
-          //       producer,
-          //       roomName,
-          //       socket.id
-          //     );
-          //     console.log(
-          //       `Auto-started recording for video producer: ${filePath}`
-          //     );
-          //   } catch (error) {
-          //     console.error("Failed to auto-start recording:", error);
-          //   }
-          // }
+          if (kind === "video") {
+            try {
+              const filePath = await startRecording(
+                rooms[roomName].router,
+                producer,
+                roomName,
+                socket.id
+              );
+              console.log(
+                `Auto-started recording for video producer: ${filePath}`
+              );
+            } catch (error) {
+              console.error("Failed to auto-start recording:", error);
+            }
+          }
 
           // informConsumers(roomName, socket.id, producer.id);
 
