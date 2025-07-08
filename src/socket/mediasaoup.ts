@@ -290,10 +290,10 @@ const useMediaSoup = async (
       rooms[roomName] = {
         router: router1,
         peers: [...peers, socketId],
-        ...(isNewRoom ? { adminSocket: socket } : {}),
+        adminSocket: isNewRoom ? socket : rooms[roomName].adminSocket,
       };
 
-      console.log("joinRoom by admin ", rooms[roomName])
+      console.log("joinRoom by admin ", rooms[roomName],isNewRoom)
 
       return router1;
     };
