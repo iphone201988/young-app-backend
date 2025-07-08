@@ -11,6 +11,8 @@ import path from "path";
 import fs from "fs";
 import net from "net";
 import { spawn } from "child_process";
+import { PutObjectCommand } from "@aws-sdk/client-s3";
+import { s3 } from "../middleware/multerS3.middleware";
 
 console.log("mediasoup:L::", mediasoup);
 
@@ -779,6 +781,31 @@ const useMediaSoup = async (
     fs.mkdirSync(recordingsDir, { recursive: true });
   }
 
+  const uploadToS3 = async (
+    filePath: string,
+    bucketName: string,
+    key: string
+  ) => {
+    const fileStream = fs.createReadStream(filePath);
+
+    const uploadParams = {
+      Bucket: bucketName,
+      Key: key, // e.g., "recordings/my-recording.mkv"
+      Body: fileStream,
+      ContentType: "video/x-matroska",
+    };
+
+    try {
+      const command = new PutObjectCommand(uploadParams);
+      await s3.send(command);
+      console.log(`✅ Uploaded to S3: ${key}`);
+      return `https://${bucketName}.s3.amazonaws.com/${key}`;
+    } catch (error) {
+      console.error("❌ Failed to upload to S3:", error);
+      throw error;
+    }
+  };
+
   const startRecording = async (router, producer, roomName, socketId) => {
     try {
       debugRecording(`Starting combined MKV recording for room: ${roomName}`);
@@ -1181,6 +1208,16 @@ a=ssrc:${videoSsrc} cname:${videoCname}
         if (stats.size > 0) {
           // MKV files are generally more robust, but we can still validate
           console.log("MKV recording appears to be valid");
+          const s3Key = `recordings/${path.basename(recording.filePath)}`;
+          const s3Url = await uploadToS3(
+            recording.filePath,
+            process.env.AWS_S3_BUCKET,
+            s3Key
+          );
+
+          // Delete local file after upload
+          // fs.unlinkSync(recording.filePath);
+          // console.log("Local MKV file deleted after upload.");
         } else {
           console.warn("Warning: Recording MKV file is empty!");
         }
