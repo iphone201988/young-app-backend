@@ -204,9 +204,6 @@ const useMediaSoup = async (
           delete rooms[roomName];
         }
       }
-
-
-      console.log("video ended")
     };
 
     socket.on("disconnect", async () => {
@@ -295,6 +292,8 @@ const useMediaSoup = async (
         peers: [...peers, socketId],
         ...(isNewRoom ? { adminSocket: socket } : {}),
       };
+
+      console.log("joinRoom by admin ", rooms[roomName])
 
       return router1;
     };
