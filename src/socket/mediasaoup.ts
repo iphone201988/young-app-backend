@@ -204,6 +204,9 @@ const useMediaSoup = async (
           delete rooms[roomName];
         }
       }
+
+
+      console.log("video ended")
     };
 
     socket.on("disconnect", async () => {
