@@ -403,15 +403,15 @@ const followUnfollowUser = TryCatch(
 
     const isFollowing = await Followers.findOne({
       userId,
-      follower: userToFollow._id,
+      follower: user?._id,
     });
 
     if (isFollowing) {
-      await Followers.deleteOne({ userId, follower: userToFollow._id });
+      await Followers.deleteOne({ _id: isFollowing?._id });
     } else {
       await Followers.create({
         userId,
-        follower: userToFollow._id,
+        follower: user?._id,
       });
     }
 
@@ -665,8 +665,8 @@ const updateCustomers = TryCatch(
 
 const getUserProfile = TryCatch(
   async (req: Request, res: Response, next: NextFunction) => {
-    const { user } = req;
-    const userId = req.query.userId || user._id;
+    const { user: loggedInUser } = req;
+    const userId = req.query.userId || loggedInUser._id;
     const userProfile = await User.findById(userId);
     if (!userProfile) return next(new ErrorHandler("User not found", 404));
 
@@ -677,12 +677,12 @@ const getUserProfile = TryCatch(
     let isConnectedWithProfile: any;
     if (req.query.userId && req.user) {
       isRated = await Ratings.findOne({
-        senderId: user._id,
+        senderId: loggedInUser._id,
         receiverId: req.query.userId,
       }).select("ratings");
 
       isReported = await Report.findOne({
-        reporterUserId: user._id,
+        reporterUserId: loggedInUser._id,
         userId: req.query.userId,
       });
 
@@ -696,22 +696,24 @@ const getUserProfile = TryCatch(
       "ratings"
     );
 
+    console.log(userProfile._id, loggedInUser._id);
+
     if (req.user) {
       [isFollowed, isConnectedWithProfile] = await Promise.all([
         Followers.findOne({
           userId: userProfile._id,
-          followers: user._id,
+          follower: loggedInUser._id,
         }),
         Followers.findOne({
           userId: userProfile._id,
-          customer: user._id,
+          customer: loggedInUser._id,
         }),
       ]);
     }
 
     const [followers, following, customers] = await Promise.all([
       Followers.countDocuments({ userId }),
-      Followers.countDocuments({ followers: userId }),
+      Followers.countDocuments({ follower: userId }),
       Followers.countDocuments({
         userId: userProfile._id,
         customer: { $exists: true },
@@ -725,9 +727,9 @@ const getUserProfile = TryCatch(
           ratings,
           chatId,
           isRated: isRated?.ratings,
-          isFollowed,
+          isFollowed: isFollowed ? true : false,
           isReported: isReported ? true : false,
-          isConnectedWithProfile,
+          isConnectedWithProfile: isConnectedWithProfile ? true : false,
           customers,
           followers,
           following,
