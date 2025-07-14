@@ -47,14 +47,7 @@ postRoutes.put(
 postRoutes.put(
   "/likeDislikePost/:postId",
   authenticationMiddleware,
-  validate(postSchema.commonSchema),
-  postController.likeDislikePost
-);
-
-postRoutes.put(
-  "/likeDislikePost/:postId",
-  authenticationMiddleware,
-  validate(postSchema.commonSchema),
+  validate(postSchema.saveUnsavePostSchema),
   postController.likeDislikePost
 );
 
