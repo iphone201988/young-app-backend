@@ -30,24 +30,24 @@ const useSockets = (
     return users.get(userId);
   };
 
-  // io.use((socket: CustomSocket, next) => {
-  //   const token: any = socket.handshake.headers.token;
-  //   if (!token) {
-  //     return next(new Error("Authentication failed. Missing token."));
-  //   }
-  //   try {
-  //     const decoded = jwt.verify(token, process.env.JWT_SECRET) as JwtPayload;
-  //     if (!decoded) {
-  //       return next(new Error("Authentication failed. Invalid token."));
-  //     }
+  io.use((socket: CustomSocket, next) => {
+    const token: any = socket.handshake.headers.token;
+    if (!token) {
+      return next(new Error("Authentication failed. Missing token."));
+    }
+    try {
+      const decoded = jwt.verify(token, process.env.JWT_SECRET) as JwtPayload;
+      if (!decoded) {
+        return next(new Error("Authentication failed. Invalid token."));
+      }
 
-  //     socket.userId = decoded.userId;
+      socket.userId = decoded.userId;
 
-  //     next();
-  //   } catch (err) {
-  //     return next(new Error("Authentication failed. Invalid token."));
-  //   }
-  // });
+      next();
+    } catch (err) {
+      return next(new Error("Authentication failed. Invalid token."));
+    }
+  });
 
   io.on("connection", async (socket: CustomSocket) => {
     addUser(socket.userId, socket.id);
