@@ -293,7 +293,7 @@ const useMediaSoup = async (
         adminSocket: isNewRoom ? socket : rooms[roomName].adminSocket,
       };
 
-      console.log("joinRoom by admin ", rooms[roomName],isNewRoom)
+      console.log("joinRoom by admin ", rooms[roomName], isNewRoom);
 
       return router1;
     };

@@ -121,7 +121,7 @@ export interface PostModel extends Document {
   scheduleDate: Date;
   isPublished: boolean;
   isDeleted: boolean;
-  likedBy: any[];
+  // likedBy: any[];
   reSharedBy: any;
   reSharedPostId: any;
 
@@ -135,7 +135,7 @@ export interface CommentsModel extends Document {
   vaultId: any;
   comment: string;
   type: string;
-  likedBy: any[];
+  // likedBy: any[];
 
   createdAt: Date;
   updatedAt: Date;

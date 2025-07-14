@@ -3,7 +3,7 @@ import { SUCCESS, TryCatch } from "../utils/helper";
 import { getVaultById } from "../services/vault.services";
 import ErrorHandler from "../utils/ErrorHandler";
 import Comments from "../model/comments.model";
-import { postType } from "../utils/enums";
+import { likesDislikesType, postType } from "../utils/enums";
 import { getPostById } from "../services/post.services";
 import {
   AddCommentRequest,
@@ -11,6 +11,7 @@ import {
 } from "../../types/API/Comment/types";
 import { CommentsModel } from "../../types/Database/types";
 import mongoose from "mongoose";
+import LikesDislikes from "../model/likesDislike.model";
 
 const addComment = TryCatch(
   async (
@@ -23,14 +24,14 @@ const addComment = TryCatch(
 
     let newComment: CommentsModel;
 
-    if (type == "share") {
+    if (type == "share" || type == "stream") {
       const post = await getPostById(id);
 
       newComment = await Comments.create({
         userId,
         postId: post._id,
         comment,
-        type: postType.SHARE,
+        type: postType.STREAM,
       });
     }
     if (type == "vault") {
@@ -54,7 +55,7 @@ const addComment = TryCatch(
     return SUCCESS(res, 200, `Comment added successfully`, {
       data: {
         comment: {
-          ...newComment.toObject(),
+          ...newComment?.toObject(),
           userId: {
             _id: userId,
             firstName: user.firstName,
@@ -87,7 +88,7 @@ const getAllComments = TryCatch(
 
     const query: any = {};
 
-    if (type == "share") {
+    if (type == "share" || type == "stream") {
       const post = await getPostById(id);
       query.postId = new mongoose.Types.ObjectId(id);
     }
@@ -134,17 +135,54 @@ const getAllComments = TryCatch(
         $unwind: "$userId",
       },
       {
-        $addFields: {
-          likesCount: { $size: "$likedBy" },
-          isLiked: {
-            $cond: {
-              if: {
-                $in: [new mongoose.Types.ObjectId(userId), "$likedBy"],
+        $lookup: {
+          from: "likesdislikes",
+          let: { commentId: "$_id" },
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $and: [
+                    { $eq: ["$comment", "$$commentId"] },
+                    { $eq: ["$itemType", likesDislikesType.COMMENT] },
+                    { $eq: ["$userId", new mongoose.Types.ObjectId(userId)] },
+                  ],
+                },
               },
-              then: true,
-              else: false,
             },
-          },
+          ],
+          as: "likesDislikes",
+        },
+      },
+      {
+        $lookup: {
+          from: "likesdislikes",
+          localField: "_id",
+          foreignField: "comment",
+          as: "allLikes",
+          pipeline: [
+            {
+              $match: {
+                itemType: likesDislikesType.COMMENT,
+              },
+            },
+          ],
+        },
+      },
+      {
+        $addFields: {
+          // likesCount: { $size: "$likedBy" },
+          // isLiked: {
+          //   $cond: {
+          //     if: {
+          //       $in: [new mongoose.Types.ObjectId(userId), "$likedBy"],
+          //     },
+          //     then: true,
+          //     else: false,
+          //   },
+          // },
+          likesCount: { $size: { $ifNull: ["$allLikes", []] } }, // ✅ Total likes on post
+          isLiked: { $gt: [{ $size: "$likesDislikes" }, 0] }, // ✅ Current user liked
         },
       },
       {
@@ -152,6 +190,8 @@ const getAllComments = TryCatch(
           updatedAt: 0,
           __v: 0,
           likedBy: 0,
+          allLikes: 0,
+          likesDislikes: 0,
         },
       },
     ]);
@@ -173,15 +213,31 @@ const likeDislikeComment = TryCatch(
     const comment = await Comments.findById(id);
     if (!comment) return next(new ErrorHandler("Comment not found", 404));
 
-    const isLiked = comment.likedBy.includes(userId);
+    // const isLiked = comment.likedBy.includes(userId);
+
+    // if (isLiked) {
+    //   await Comments.findByIdAndUpdate(id, {
+    //     $pull: { likedBy: userId },
+    //   });
+    // } else {
+    //   await Comments.findByIdAndUpdate(id, {
+    //     $push: { likedBy: userId },
+    //   });
+    // }
+
+    const isLiked = await LikesDislikes.findOne({
+      userId,
+      comment: id,
+      itemType: likesDislikesType.COMMENT,
+    });
 
     if (isLiked) {
-      await Comments.findByIdAndUpdate(id, {
-        $pull: { likedBy: userId },
-      });
+      await LikesDislikes.deleteOne({ _id: isLiked._id });
     } else {
-      await Comments.findByIdAndUpdate(id, {
-        $push: { likedBy: userId },
+      await LikesDislikes.create({
+        userId,
+        comment: id,
+        itemType: likesDislikesType.COMMENT,
       });
     }
 

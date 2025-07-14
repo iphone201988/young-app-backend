@@ -19,12 +19,12 @@ const postSchema = new Schema<PostModel>(
     isPublished: { type: Boolean, default: true },
     isDeleted: { type: Boolean, default: false },
 
-    likedBy: [
-      {
-        type: Schema.Types.ObjectId,
-        ref: "user",
-      },
-    ],
+    // likedBy: [
+    //   {
+    //     type: Schema.Types.ObjectId,
+    //     ref: "user",
+    //   },
+    // ],
 
     reSharedBy: {
       type: Schema.Types.ObjectId,

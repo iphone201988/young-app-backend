@@ -64,6 +64,7 @@ export const eventType = {
 export const ratingsType = {
   USER: "user",
   SHARE: "share",
+  STREAM: "stream",
   VAULT: "vault",
 };
 
@@ -84,3 +85,9 @@ export const adStatus={
   IN_REVIEW: "in_review",
   REJECT: "reject",
 }
+
+export const likesDislikesType = {
+  SHARE: "share",
+  STREAM: "stream",
+  COMMENT: "comment",
+};

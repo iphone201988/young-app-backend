@@ -19,7 +19,7 @@ const giveRatings = TryCatch(
 
     const query: any = { senderId: userId, type };
     if (type == ratingsType.USER) query.receiverId = id;
-    if (type == ratingsType.SHARE) query.postId = id;
+    if (type == ratingsType.SHARE || type == ratingsType.STREAM) query.postId = id;
     if (type == ratingsType.VAULT) query.vaultId = id;
 
     const rating = await Ratings.findOne(query);

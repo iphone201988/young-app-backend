@@ -15,6 +15,7 @@ import { postType, ratingsType } from "../utils/enums";
 import ErrorHandler from "../utils/ErrorHandler";
 import Ratings from "../model/ratings.model";
 import SavedItems from "../model/savedItems.model";
+import LikesDislikes from "../model/likesDislike.model";
 
 const createPost = TryCatch(
   async (
@@ -217,21 +218,58 @@ const getPosts = TryCatch(
         },
       },
       {
+        $lookup: {
+          from: "likesdislikes",
+          let: { postId: "$_id" },
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $and: [
+                    { $eq: ["$item", "$$postId"] },
+                    { $eq: ["$itemType", type] },
+                    { $eq: ["$userId", new mongoose.Types.ObjectId(userId)] },
+                  ],
+                },
+              },
+            },
+          ],
+          as: "likesDislikes",
+        },
+      },
+      {
+        $lookup: {
+          from: "likesdislikes",
+          localField: "_id",
+          foreignField: "item",
+          as: "allLikes",
+          pipeline: [
+            {
+              $match: {
+                itemType: type,
+              },
+            },
+          ],
+        },
+      },
+      {
         $addFields: {
           commentsCount: { $size: "$comments" },
-          likesCount: { $size: "$likedBy" },
+          // likesCount: { $size: "$likedBy" },
           isReported: { $gt: [{ $size: "$isReported" }, 0] },
           isSaved: { $gt: [{ $size: { $ifNull: ["$savedItems", []] } }, 0] },
-          isLiked: {
-            $cond: {
-              if: {
-                // $in: [new mongoose.Types.ObjectId(userId), "$savedByUsers"],
-                $in: [new mongoose.Types.ObjectId(userId), "$likedBy"],
-              },
-              then: true,
-              else: false,
-            },
-          },
+          // isLiked: {
+          //   $cond: {
+          //     if: {
+          //       // $in: [new mongoose.Types.ObjectId(userId), "$savedByUsers"],
+          //       $in: [new mongoose.Types.ObjectId(userId), "$likedBy"],
+          //     },
+          //     then: true,
+          //     else: false,
+          //   },
+          // },
+          likesCount: { $size: { $ifNull: ["$allLikes", []] } }, // ✅ Total likes on post
+          isLiked: { $gt: [{ $size: "$likesDislikes" }, 0] }, // ✅ Current user liked
         },
       },
       {
@@ -246,6 +284,8 @@ const getPosts = TryCatch(
           comments: 0,
           likedBy: 0,
           savedItems: 0,
+          allLikes: 0,
+          likesDislikes: 0,
         },
       },
     ]);
@@ -335,18 +375,31 @@ const likeDislikePost = TryCatch(
   async (req: Request<PostIdRequest>, res: Response, next: NextFunction) => {
     const { userId } = req;
     const { postId } = req.params;
+    const { type } = req.query;
 
-    const post = await getPostById(postId);
+    // const post = await getPostById(postId);
 
-    const isLiked = post.likedBy.includes(userId);
+    // const isLiked = post.likedBy.includes(userId);
+    // if (isLiked) {
+    //   await Post.findByIdAndUpdate(postId, {
+    //     $pull: { likedBy: userId },
+    //   });
+    // } else {
+    //   await Post.findByIdAndUpdate(postId, {
+    //     $push: { likedBy: userId },
+    //   });
+    // }
+
+    const isLiked = await LikesDislikes.findOne({
+      userId,
+      item: postId,
+      itemType: type,
+    });
+
     if (isLiked) {
-      await Post.findByIdAndUpdate(postId, {
-        $pull: { likedBy: userId },
-      });
+      await LikesDislikes.deleteOne({ _id: isLiked._id });
     } else {
-      await Post.findByIdAndUpdate(postId, {
-        $push: { likedBy: userId },
-      });
+      await LikesDislikes.create({ userId, item: postId, itemType: type });
     }
 
     return SUCCESS(
@@ -509,19 +562,56 @@ const getSavedPosts = TryCatch(
         },
       },
       {
+        $lookup: {
+          from: "likesdislikes",
+          let: { postId: "$_id" },
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $and: [
+                    { $eq: ["$item", "$$postId"] },
+                    { $eq: ["$itemType", type] },
+                    { $eq: ["$userId", new mongoose.Types.ObjectId(userId)] },
+                  ],
+                },
+              },
+            },
+          ],
+          as: "likesDislikes",
+        },
+      },
+      {
+        $lookup: {
+          from: "likesdislikes",
+          localField: "_id",
+          foreignField: "item",
+          as: "allLikes",
+          pipeline: [
+            {
+              $match: {
+                itemType: type,
+              },
+            },
+          ],
+        },
+      },
+      {
         $addFields: {
           commentsCount: { $size: "$comments" },
-          likesCount: { $size: "$likedBy" },
+          // likesCount: { $size: "$likedBy" },
           isReported: { $gt: [{ $size: "$isReported" }, 0] },
-          isLiked: {
-            $cond: {
-              if: {
-                $in: [new mongoose.Types.ObjectId(userId), "$likedBy"],
-              },
-              then: true,
-              else: false,
-            },
-          },
+          // isLiked: {
+          //   $cond: {
+          //     if: {
+          //       $in: [new mongoose.Types.ObjectId(userId), "$likedBy"],
+          //     },
+          //     then: true,
+          //     else: false,
+          //   },
+          // },
+          likesCount: { $size: { $ifNull: ["$allLikes", []] } }, // ✅ Total likes on post
+          isLiked: { $gt: [{ $size: "$likesDislikes" }, 0] }, // ✅ Current user liked
         },
       },
       {
@@ -535,6 +625,8 @@ const getSavedPosts = TryCatch(
           isDeleted: 0,
           comments: 0,
           likedBy: 0,
+          allLikes: 0,
+          likesDislikes: 0,
         },
       },
       {

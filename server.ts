@@ -8,14 +8,14 @@ import https from "https";
 import http from "http";
 import fs from "fs";
 
-const options = {
-  key: fs.readFileSync("./src/ssl/private.key"),
-  cert: fs.readFileSync("./src/ssl/certificate.crt"),
-  ca: fs.readFileSync("./src/ssl/ca_bundle.crt"),
-};
+// const options = {
+//   key: fs.readFileSync("./src/ssl/private.key"),
+//   cert: fs.readFileSync("./src/ssl/certificate.crt"),
+//   ca: fs.readFileSync("./src/ssl/ca_bundle.crt"),
+// };
 
-// const httpServer = http.createServer(app);
-const httpServer = https.createServer(options, app);
+const httpServer = http.createServer(app);
+// const httpServer = https.createServer(options, app);
 
 const io = new Server(httpServer);
 useSockets(io);

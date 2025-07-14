@@ -9,7 +9,7 @@ const commentsSchema = new Schema<CommentsModel>(
     vaultId: { type: Schema.Types.ObjectId, ref: "vault" },
     comment: { type: String },
     type: { type: String, enum: Object.values(postType) },
-    likedBy: [{ type: Schema.Types.ObjectId, ref: "user" }],
+    // likedBy: [{ type: Schema.Types.ObjectId, ref: "user" }],
   },
   { timestamps: true }
 );
