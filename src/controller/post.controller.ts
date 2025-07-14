@@ -16,6 +16,7 @@ import ErrorHandler from "../utils/ErrorHandler";
 import Ratings from "../model/ratings.model";
 import SavedItems from "../model/savedItems.model";
 import LikesDislikes from "../model/likesDislike.model";
+import moment from "moment";
 
 const createPost = TryCatch(
   async (
@@ -664,11 +665,17 @@ const getPostDetailsById = TryCatch(
       senderId: userId,
     }).select("ratings");
 
+    let isPast = false;
+    if (post?.scheduleDate) {
+      isPast = moment.utc(post?.scheduleDate).isBefore(moment.utc());
+    }
+
     return SUCCESS(res, 200, "Post fetched successfully", {
       data: {
         post: {
           ...post.toObject(),
           ratings: ratings.length ? ratings[0]?.ratings : undefined,
+          scheduleDate: isPast ? undefined : post?.scheduleDate,
         },
       },
     });

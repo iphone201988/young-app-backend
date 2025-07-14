@@ -43,6 +43,7 @@ import Chat from "../model/chat.model";
 import Report from "../model/report.model";
 import Followers from "../model/followers.model";
 import { isQuestionOrPlusOrMinusToken } from "typescript";
+import Post from "../model/post.model";
 
 const registerUser = TryCatch(
   async (
@@ -674,6 +675,7 @@ const getUserProfile = TryCatch(
     let isReported: any;
     let chatId: any;
     let isFollowed: any;
+    let sharesCount: any;
     let isConnectedWithProfile: any;
     if (req.query.userId && req.user) {
       isRated = await Ratings.findOne({
@@ -696,10 +698,8 @@ const getUserProfile = TryCatch(
       "ratings"
     );
 
-    console.log(userProfile._id, loggedInUser._id);
-
     if (req.user) {
-      [isFollowed, isConnectedWithProfile] = await Promise.all([
+      [isFollowed, isConnectedWithProfile, sharesCount] = await Promise.all([
         Followers.findOne({
           userId: userProfile._id,
           follower: loggedInUser._id,
@@ -708,6 +708,7 @@ const getUserProfile = TryCatch(
           userId: userProfile._id,
           customer: loggedInUser._id,
         }),
+        Post.countDocuments({ userId: userProfile._id }),
       ]);
     }
 
@@ -733,6 +734,7 @@ const getUserProfile = TryCatch(
           customers,
           followers,
           following,
+          sharesCount,
         },
       },
     });
