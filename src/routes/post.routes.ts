@@ -65,6 +65,12 @@ postRoutes.get(
 );
 
 postRoutes.get(
+  "/downloadHistory",
+  authenticationMiddleware,
+  postController.downloadHistory
+);
+
+postRoutes.get(
   "/:postId",
   authenticationMiddleware,
   validate(postSchema.commonSchema),

@@ -2,15 +2,12 @@ import { NextFunction, Request, Response } from "express";
 import { SUCCESS, TryCatch, getFiles } from "../utils/helper";
 import Post from "../model/post.model";
 import {
-  AddCommentsRequest,
   CreatePostRequest,
   GetPostsRequest,
   PostIdRequest,
 } from "../../types/API/Post/types";
 import { getPostById } from "../services/post.services";
-import Comments from "../model/comments.model";
 import mongoose from "mongoose";
-import User from "../model/user.model";
 import { postType, ratingsType } from "../utils/enums";
 import ErrorHandler from "../utils/ErrorHandler";
 import Ratings from "../model/ratings.model";
@@ -294,7 +291,7 @@ const getPosts = TryCatch(
             {
               $match: {
                 $expr: { $eq: ["$postId", "$$id"] },
-                type: ratingsType.SHARE,
+                type: type,
                 senderId: new mongoose.Types.ObjectId(userId),
               },
             },
@@ -414,9 +411,23 @@ const getPosts = TryCatch(
         },
       },
     ]);
+    let finalData = posts;
+    if (type == postType.STREAM) {
+      finalData = posts.map((post: any) => {
+        let isPast = false;
+        if (post?.scheduleDate) {
+          isPast = moment.utc(post?.scheduleDate).isBefore(moment.utc());
+        }
+        if (isPast) {
+          return { ...post, scheduleDate: undefined };
+        } else {
+          return post;
+        }
+      });
+    }
 
     return SUCCESS(res, 200, "Posts fetched successfully", {
-      data: { posts },
+      data: { posts: finalData },
       pagination: {
         total: total[0]?.count || 0,
         page: Number(page),
@@ -640,7 +651,7 @@ const getSavedPosts = TryCatch(
             {
               $match: {
                 $expr: { $eq: ["$postId", "$$id"] },
-                type: ratingsType.SHARE,
+                type: type,
                 senderId: new mongoose.Types.ObjectId(userId),
               },
             },
@@ -817,20 +828,38 @@ const getTrendingTopics = TryCatch(
         },
       },
       {
+        $sort: { createdAt: -1 }, // Ensure latest post comes first
+      },
+      {
         $group: {
           _id: "$topic",
           count: { $sum: 1 },
+          latestPost: { $first: "$$ROOT" },
         },
       },
       {
-        $sort: { count: -1 },
+        $sort: { count: -1 }, // Sort by popularity
       },
-      { $limit: 10 },
+      {
+        $limit: 10, // Top 10 trending topics
+      },
+      {
+        $replaceRoot: {
+          newRoot: {
+            $mergeObjects: ["$latestPost", { topic: "$_id", count: "$count" }],
+          },
+        },
+      },
       {
         $project: {
-          topic: "$_id",
+          _id: 1,
+          title: 1,
+          topic: 1,
           count: 1,
-          _id: 0,
+          createdAt: 1,
+          image: 1,
+          userId: 1,
+          description: 1,
         },
       },
     ]);
@@ -892,6 +921,27 @@ const deletePost = TryCatch(
   }
 );
 
+const downloadHistory = TryCatch(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const { userId } = req;
+    const posts = await Post.find({
+      userId,
+      type: postType.SHARE,
+    })
+      .select("-likedBy")
+      .lean();
+
+    const finalData = posts.map((post: any) => ({
+      ...post,
+      image: process.env.AWS_S3_URI + post.image,
+    }));
+
+    return SUCCESS(res, 200, "Posts history fetched successfully", {
+      data: { posts: finalData },
+    });
+  }
+);
+
 export default {
   createPost,
   getPosts,
@@ -904,4 +954,5 @@ export default {
   getTrendingTopics,
   reSharePost,
   deletePost,
+  downloadHistory,
 };
