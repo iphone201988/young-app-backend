@@ -20,7 +20,7 @@ const report = TryCatch(
       getUserById(id);
       data.userId = id;
     }
-    if (type == "share") {
+    if (type == "share" || type == "stream") {
       getPostById(id);
       data.postId = id;
     }
