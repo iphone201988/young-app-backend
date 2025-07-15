@@ -41,7 +41,7 @@ const getPostsSchema = {
   query: Joi.object({
     type: specificStringValidation("Post type", postType),
     userType: specificStringValidation("User type", userRole),
-    sort: numberValidation("Sort", false),
+    sort: booleanValidation("Sort", false),
     page: numberValidation("Page", false),
     limit: numberValidation("Limit", false),
     byFollowers: booleanValidation("Followers", false),

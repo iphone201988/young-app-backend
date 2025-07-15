@@ -68,7 +68,7 @@ const getVaults = TryCatch(
       isDeleted: false,
     };
 
-    const sortOptions: any = { createdAt: sort ? -1 : 1 };
+    const sortOptions: any = { createdAt: sort ? 1 : -1 };
     const filterQuery = [];
     const longitude = user?.location?.coordinates[0];
     const latitude = user?.location?.coordinates[1];
@@ -114,13 +114,13 @@ const getVaults = TryCatch(
         {
           $lookup: {
             from: "ratings",
-            let: { postId: "$_id" },
+            let: { id: "$_id" },
             pipeline: [
               {
                 $match: {
                   $expr: {
                     $and: [
-                      { $eq: ["$postId", "$$vaultId"] },
+                      { $eq: ["$vaultId", "$$id"] },
                       { $eq: ["$ratings", rating] },
                     ],
                   },
@@ -298,6 +298,39 @@ const getVaults = TryCatch(
             },
           ],
           as: "isReported",
+        },
+      },
+      {
+        $lookup: {
+          from: "ratings",
+          let: { id: "$_id" },
+          pipeline: [
+            {
+              $match: {
+                $expr: { $eq: ["$vaultId", "$$id"] },
+                type: postType.VAULT,
+                senderId: new mongoose.Types.ObjectId(userId),
+              },
+            },
+            {
+              $project: {
+                ratings: 1,
+                _id: 1,
+              },
+            },
+          ],
+          as: "ratings",
+        },
+      },
+      {
+        $unwind: {
+          path: "$ratings",
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+      {
+        $set: {
+          ratings: "$ratings.ratings",
         },
       },
       {
@@ -666,6 +699,39 @@ const getSavedVaults = TryCatch(
             },
           ],
           as: "isReported",
+        },
+      },
+      {
+        $lookup: {
+          from: "ratings",
+          let: { id: "$_id" },
+          pipeline: [
+            {
+              $match: {
+                $expr: { $eq: ["$vaultId", "$$id"] },
+                type: postType.VAULT,
+                senderId: new mongoose.Types.ObjectId(userId),
+              },
+            },
+            {
+              $project: {
+                ratings: 1,
+                _id: 1,
+              },
+            },
+          ],
+          as: "ratings",
+        },
+      },
+      {
+        $unwind: {
+          path: "$ratings",
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+      {
+        $set: {
+          ratings: "$ratings.ratings",
         },
       },
       {

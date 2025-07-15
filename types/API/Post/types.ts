@@ -10,7 +10,7 @@ export type CreatePostRequest = {
 export type GetPostsRequest = {
   type: string;
   userType: string;
-  sort: number;
+  sort: boolean;
   page: number;
   limit: number;
   distance: boolean;

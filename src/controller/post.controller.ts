@@ -218,7 +218,7 @@ const getPosts = TryCatch(
         },
       },
       {
-        $sort: { createdAt: sort ? -1 : 1 },
+        $sort: { createdAt: sort ? 1 : -1 },
       },
       { $skip: skip },
       { $limit: limit },

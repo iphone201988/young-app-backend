@@ -64,7 +64,7 @@ const getVaultsSchema = {
     }),
     page: numberValidation("Page", false),
     limit: numberValidation("Limit", false),
-    sort: numberValidation("Sort", false),
+    sort: booleanValidation("Sort", false),
     byFollowers: booleanValidation("Followers", false),
     bySave: booleanValidation("Saved", false),
     rating: numberValidation("Rating", false),
