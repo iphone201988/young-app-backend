@@ -49,7 +49,16 @@ const getVaults = TryCatch(
     next: NextFunction
   ) => {
     const { user, userId } = req;
-    let { userType, page = 1, limit = process.env.LIMIT } = req.query;
+    let {
+      userType,
+      page = 1,
+      limit = process.env.LIMIT,
+      sort,
+      distance,
+      rating,
+      byFollowers,
+      bySave,
+    } = req.query;
     page = Number(page);
     limit = Number(limit);
     const skip = (Number(page) - 1) * limit;
@@ -58,6 +67,111 @@ const getVaults = TryCatch(
       access: vaultAccess.PUBLIC,
       isDeleted: false,
     };
+
+    const sortOptions: any = { createdAt: sort ? -1 : 1 };
+    const filterQuery = [];
+    const longitude = user?.location?.coordinates[0];
+    const latitude = user?.location?.coordinates[1];
+
+    if (bySave) {
+      filterQuery.push({
+        $lookup: {
+          from: "saveditems",
+          localField: "_id",
+          foreignField: "vault",
+          as: "allSaves",
+          pipeline: [
+            {
+              $match: {
+                itemType: postType.VAULT,
+              },
+            },
+          ],
+        },
+      });
+      sortOptions.allSaves = -1;
+    }
+    if (byFollowers) {
+      filterQuery.push(
+        {
+          $lookup: {
+            from: "followers",
+            localField: "admin._id",
+            foreignField: "userId",
+            as: "totalFollowers",
+          },
+        },
+        {
+          $addFields: {
+            followersCount: { $size: "$totalFollowers" },
+          },
+        }
+      );
+      sortOptions.followersCount = -1;
+    }
+    if (rating) {
+      filterQuery.push(
+        {
+          $lookup: {
+            from: "ratings",
+            let: { postId: "$_id" },
+            pipeline: [
+              {
+                $match: {
+                  $expr: {
+                    $and: [
+                      { $eq: ["$postId", "$$vaultId"] },
+                      { $eq: ["$ratings", rating] },
+                    ],
+                  },
+                },
+              },
+            ],
+            as: "ratings",
+          },
+        },
+        {
+          $match: {
+            ratings: { $ne: [] }, // only keep posts that have matching ratings
+          },
+        }
+      );
+    }
+    if (distance) {
+      filterQuery.push({
+        $addFields: {
+          distance: {
+            $sqrt: {
+              $add: [
+                {
+                  $pow: [
+                    {
+                      $subtract: [
+                        { $arrayElemAt: ["$admin.location.coordinates", 1] },
+                        latitude,
+                      ],
+                    },
+                    2,
+                  ],
+                },
+                {
+                  $pow: [
+                    {
+                      $subtract: [
+                        { $arrayElemAt: ["$admin.location.coordinates", 0] },
+                        longitude,
+                      ],
+                    },
+                    2,
+                  ],
+                },
+              ],
+            },
+          },
+        },
+      });
+      sortOptions.distance = -1;
+    }
 
     const total = await Vault.aggregate([
       {
@@ -83,10 +197,17 @@ const getVaults = TryCatch(
           path: "$admin",
         },
       },
+      ...filterQuery,
       {
         $count: "count",
       },
     ]);
+
+    if (Object.keys(sortOptions).length) {
+      filterQuery.push({
+        $sort: sortOptions,
+      });
+    }
 
     const vaults = await Vault.aggregate([
       {
@@ -206,7 +327,8 @@ const getVaults = TryCatch(
           isSaved: { $gt: [{ $size: { $ifNull: ["$savedItems", []] } }, 0] },
         },
       },
-      { $sort: { createdAt: -1 } },
+      ...filterQuery,
+      // { $sort: { createdAt: -1 } },
       {
         $project: {
           __v: 0,

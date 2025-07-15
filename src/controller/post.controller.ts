@@ -73,8 +73,6 @@ const getPosts = TryCatch(
     const longitude = user?.location?.coordinates[0];
     const latitude = user?.location?.coordinates[1];
 
-    let userLookup = {};
-
     if (bySave) {
       filterQuery.push({
         $lookup: {
@@ -114,7 +112,6 @@ const getPosts = TryCatch(
     if (byBoom) {
       sortOptions.likesCount = -1;
     }
-
     if (rating) {
       filterQuery.push(
         {
@@ -143,7 +140,6 @@ const getPosts = TryCatch(
         }
       );
     }
-
     if (distance) {
       filterQuery.push({
         $addFields: {
@@ -202,10 +198,10 @@ const getPosts = TryCatch(
           as: "userId",
         },
       },
-      ...filterQuery,
       {
         $unwind: "$userId",
       },
+      ...filterQuery,
       {
         $count: "count",
       },

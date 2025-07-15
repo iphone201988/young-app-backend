@@ -13,11 +13,11 @@ export type GetPostsRequest = {
   sort: number;
   page: number;
   limit: number;
-  distance: any;
-  rating: any;
-  byFollowers: any;
-  byBoom: any;
-  bySave: any;
+  distance: boolean;
+  rating: number;
+  byFollowers: boolean;
+  byBoom: boolean;
+  bySave: boolean;
 };
 
 export type AddCommentsRequest = {

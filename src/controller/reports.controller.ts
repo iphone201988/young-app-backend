@@ -5,6 +5,8 @@ import { getUserById } from "../services/user.services";
 import { getPostById } from "../services/post.services";
 import { getVaultById } from "../services/vault.services";
 import { ReportRequest } from "../../types/API/Report/types";
+import Vault from "../model/vault.model";
+import ErrorHandler from "../utils/ErrorHandler";
 
 const report = TryCatch(
   async (
@@ -25,6 +27,11 @@ const report = TryCatch(
       data.postId = id;
     }
     if (type == "vault") {
+      // const vault = await Vault.findOne({
+      //   _id: id,
+      //   members: { $in: [userId] },
+      // });
+      // if(!vault) return next(new ErrorHandler("You're not authorized to report this vault"))
       getVaultById(id);
       data.vaultId = id;
     }

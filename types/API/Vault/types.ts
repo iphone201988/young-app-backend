@@ -11,6 +11,12 @@ export type GetVaultsRequest = {
   userType?: string;
   page?: number;
   limit?: number;
+  sort: boolean;
+  distance: boolean;
+  rating: number;
+  byFollowers: boolean;
+  byBoom: boolean;
+  bySave: boolean;
 };
 
 export type VaultIdRequest = {

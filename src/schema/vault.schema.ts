@@ -1,6 +1,7 @@
 import Joi from "joi";
 import {
   ObjectIdValidation,
+  booleanValidation,
   numberValidation,
   specificStringValidation,
   stringValidation,
@@ -63,6 +64,11 @@ const getVaultsSchema = {
     }),
     page: numberValidation("Page", false),
     limit: numberValidation("Limit", false),
+    sort: numberValidation("Sort", false),
+    byFollowers: booleanValidation("Followers", false),
+    bySave: booleanValidation("Saved", false),
+    rating: numberValidation("Rating", false),
+    distance: booleanValidation("Distance", false),
   }),
 };
 
