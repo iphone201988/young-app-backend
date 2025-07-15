@@ -795,7 +795,7 @@ const getPostDetailsById = TryCatch(
     }
 
     const ratings = await Ratings.find({
-      type: "share",
+      type: post?.type,
       postId: post._id,
       senderId: userId,
     }).select("ratings");
