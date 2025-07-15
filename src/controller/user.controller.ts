@@ -63,6 +63,8 @@ const registerUser = TryCatch(
       password,
       deviceToken,
       deviceType,
+      latitude,
+      longitude,
     } = req.body;
 
     email = email.toLowerCase();
@@ -93,6 +95,12 @@ const registerUser = TryCatch(
         deviceType,
       });
       if (company) user.company = company;
+      if (longitude && latitude) {
+        user.location = {
+          type: "Point",
+          coordinates: [longitude, latitude],
+        };
+      }
     }
 
     const otp = generateOTP();
@@ -329,7 +337,15 @@ const loginUser = TryCatch(
     res: Response,
     next: NextFunction
   ) => {
-    let { username, email, password, deviceType, deviceToken } = req.body;
+    let {
+      username,
+      email,
+      password,
+      deviceType,
+      deviceToken,
+      longitude,
+      latitude,
+    } = req.body;
 
     let user: UserModel | null;
     if (email) {
@@ -351,6 +367,15 @@ const loginUser = TryCatch(
         customer: { $exists: true },
       }),
     ]);
+
+    if (longitude && latitude) {
+      user.location = {
+        type: "Point",
+        coordinates: [longitude, latitude],
+      };
+      await user.save();
+    }
+
     if (!user.isRegistrationCompleted) {
       return SUCCESS(res, 200, "Please complete your registration first", {
         data: {
@@ -492,6 +517,8 @@ const updateUser = TryCatch(
 
       additionalPhotosToBeRemoved = [],
       formUploadToBeRemoved = [],
+      latitude,
+      longitude,
     } = req.body;
 
     const files = getFiles(req, [
@@ -621,6 +648,12 @@ const updateUser = TryCatch(
       if (retirement) user.retirement = retirement;
       if (investmentRealEstate)
         user.investmentRealEstate = investmentRealEstate;
+    }
+    if (longitude && latitude) {
+      user.location = {
+        type: "Point",
+        coordinates: [longitude, latitude],
+      };
     }
 
     await user.save();

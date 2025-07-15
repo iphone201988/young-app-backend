@@ -10,6 +10,9 @@ export type RegisterUserRequest = {
   password: string;
   deviceToken: string;
   deviceType: number;
+
+  latitude: number;
+  longitude: number;
 };
 
 export type VerifyOTPRequest = {
@@ -55,6 +58,9 @@ export type LoginUserRequest = {
   password: string;
   deviceType: number;
   deviceToken: string;
+
+  latitude: number;
+  longitude: number;
 };
 
 export type ChangePasswordType = {
@@ -125,6 +131,9 @@ export type UpdateUserRequest = {
 
   additionalPhotosToBeRemoved: Array<string>;
   formUploadToBeRemoved: Array<string>;
+
+  latitude: number;
+  longitude: number;
 };
 
 export type GetUsersRequest = {

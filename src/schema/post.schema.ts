@@ -1,6 +1,7 @@
 import Joi from "joi";
 import {
   ObjectIdValidation,
+  booleanValidation,
   numberValidation,
   specificStringValidation,
   stringValidation,
@@ -43,6 +44,11 @@ const getPostsSchema = {
     sort: numberValidation("Sort", false),
     page: numberValidation("Page", false),
     limit: numberValidation("Limit", false),
+    byFollowers: booleanValidation("Followers", false),
+    byBoom: booleanValidation("Booms", false),
+    bySave: booleanValidation("Saved", false),
+    rating: numberValidation("Rating", false),
+    distance: booleanValidation("Distance", false),
   }),
 };
 

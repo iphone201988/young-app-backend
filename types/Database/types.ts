@@ -11,6 +11,7 @@ export interface UserModel extends Document {
   yearFounded: string;
   password: string;
   role: string;
+  location: { type: "Point"; coordinates: Array<number> };
   licenseImage: string;
   lastLogin: Date;
   crdNumber: string;

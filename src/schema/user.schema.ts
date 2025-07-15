@@ -24,6 +24,9 @@ const registerSchema = {
     password: stringValidation("Password"),
     deviceToken: stringValidation("Device Token"),
     deviceType: specificNumberValidation("Device Type", deviceType),
+
+    longitude: numberValidation("Longitude", false),
+    latitude: numberValidation("Latitude", false),
   }),
 };
 
@@ -34,6 +37,9 @@ const loginUserSchema = {
     password: passwordValidation(),
     deviceToken: stringValidation("Device Token"),
     deviceType: specificNumberValidation("Device Type", deviceType),
+
+    longitude: numberValidation("Longitude", false),
+    latitude: numberValidation("Latitude", false),
   }).xor("username", "email"),
 };
 
@@ -168,6 +174,9 @@ const updateUserSchema = {
       "array.base": `"formUploadToBeRemoved" should be an array`,
       "string.base": `"formUploadToBeRemoved" items should be strings`,
     }),
+
+    longitude: numberValidation("Longitude", false),
+    latitude: numberValidation("Latitude", false),
   }),
 };
 

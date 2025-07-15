@@ -55,13 +55,130 @@ const getPosts = TryCatch(
     let {
       type,
       userType,
-      sort,
       page = 1,
       limit = process.env.LIMIT,
+      sort,
+      distance,
+      rating,
+      byFollowers,
+      byBoom,
+      bySave,
     } = req.query;
     page = Number(page);
     limit = Number(limit);
     const skip = (Number(page) - 1) * limit;
+
+    const sortOptions: any = {};
+    const filterQuery = [];
+    const longitude = user?.location?.coordinates[0];
+    const latitude = user?.location?.coordinates[1];
+
+    let userLookup = {};
+
+    if (bySave) {
+      filterQuery.push({
+        $lookup: {
+          from: "saveditems",
+          localField: "_id",
+          foreignField: "item",
+          as: "allSaves",
+          pipeline: [
+            {
+              $match: {
+                itemType: type,
+              },
+            },
+          ],
+        },
+      });
+      sortOptions.allSaves = -1;
+    }
+    if (byFollowers) {
+      filterQuery.push(
+        {
+          $lookup: {
+            from: "followers",
+            localField: "userId._id",
+            foreignField: "userId",
+            as: "totalFollowers",
+          },
+        },
+        {
+          $addFields: {
+            followersCount: { $size: "$totalFollowers" },
+          },
+        }
+      );
+      sortOptions.followersCount = -1;
+    }
+    if (byBoom) {
+      sortOptions.likesCount = -1;
+    }
+
+    if (rating) {
+      filterQuery.push(
+        {
+          $lookup: {
+            from: "ratings",
+            let: { postId: "$_id" },
+            pipeline: [
+              {
+                $match: {
+                  $expr: {
+                    $and: [
+                      { $eq: ["$postId", "$$postId"] },
+                      { $eq: ["$ratings", rating] },
+                    ],
+                  },
+                },
+              },
+            ],
+            as: "ratings",
+          },
+        },
+        {
+          $match: {
+            ratings: { $ne: [] }, // only keep posts that have matching ratings
+          },
+        }
+      );
+    }
+
+    if (distance) {
+      filterQuery.push({
+        $addFields: {
+          distance: {
+            $sqrt: {
+              $add: [
+                {
+                  $pow: [
+                    {
+                      $subtract: [
+                        { $arrayElemAt: ["$userId.location.coordinates", 1] },
+                        latitude,
+                      ],
+                    },
+                    2,
+                  ],
+                },
+                {
+                  $pow: [
+                    {
+                      $subtract: [
+                        { $arrayElemAt: ["$userId.location.coordinates", 0] },
+                        longitude,
+                      ],
+                    },
+                    2,
+                  ],
+                },
+              ],
+            },
+          },
+        },
+      });
+      sortOptions.distance = -1;
+    }
 
     const total = await Post.aggregate([
       {
@@ -82,16 +199,23 @@ const getPosts = TryCatch(
               },
             },
           ],
-          as: "user",
+          as: "userId",
         },
       },
+      ...filterQuery,
       {
-        $unwind: "$user",
+        $unwind: "$userId",
       },
       {
         $count: "count",
       },
     ]);
+
+    if (Object.keys(sortOptions).length) {
+      filterQuery.push({
+        $sort: sortOptions,
+      });
+    }
 
     const posts = await Post.aggregate([
       {
@@ -101,7 +225,7 @@ const getPosts = TryCatch(
         },
       },
       {
-        $sort: { createdAt: -1 },
+        $sort: { createdAt: sort ? -1 : 1 },
       },
       { $skip: skip },
       { $limit: limit },
@@ -121,6 +245,7 @@ const getPosts = TryCatch(
                 firstName: 1,
                 lastName: 1,
                 profileImage: 1,
+                location: 1,
                 _id: 1,
               },
             },
@@ -276,6 +401,7 @@ const getPosts = TryCatch(
       {
         $unwind: "$userId",
       },
+      ...filterQuery,
       {
         $project: {
           __v: 0,
@@ -287,6 +413,8 @@ const getPosts = TryCatch(
           savedItems: 0,
           allLikes: 0,
           likesDislikes: 0,
+          totalFollowers: 0,
+          allSaves: 0,
         },
       },
     ]);

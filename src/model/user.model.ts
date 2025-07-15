@@ -69,6 +69,15 @@ const userSchema = new Schema<UserModel>(
     phone: { type: String, unique: true, required: true },
     password: { type: String, required: true },
     role: { type: String, enum: Object.values(userRole) },
+    location: {
+      type: {
+        type: String,
+        enum: ["Point"],
+      },
+      coordinates: {
+        type: [Number],
+      },
+    },
     licenseImage: { type: String },
     lastLogin: { type: Date },
     crdNumber: { type: String },

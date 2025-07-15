@@ -13,6 +13,11 @@ export type GetPostsRequest = {
   sort: number;
   page: number;
   limit: number;
+  distance: any;
+  rating: any;
+  byFollowers: any;
+  byBoom: any;
+  bySave: any;
 };
 
 export type AddCommentsRequest = {
@@ -23,5 +28,3 @@ export type AddCommentsRequest = {
 export type PostIdRequest = {
   postId: string;
 };
-
-
