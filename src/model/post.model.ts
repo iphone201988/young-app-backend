@@ -1,5 +1,5 @@
 import { Schema, model } from "mongoose";
-import { postSymbol, postType, topics } from "../utils/enums";
+import { postSymbol, postType, streamStatus, topics } from "../utils/enums";
 import { PostModel } from "../../types/Database/types";
 
 const postSchema = new Schema<PostModel>(
@@ -18,6 +18,7 @@ const postSchema = new Schema<PostModel>(
     streamUrl: { type: String },
     isPublished: { type: Boolean, default: true },
     isDeleted: { type: Boolean, default: false },
+    status: { type: String, enum: Object.values(streamStatus) },
 
     // likedBy: [
     //   {

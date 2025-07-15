@@ -4,3 +4,8 @@ export type SubmitAdRequest = {
   email: string;
   website: string;
 };
+
+export type GetAdsRequest = {
+  page: number;
+  limit: number;
+};

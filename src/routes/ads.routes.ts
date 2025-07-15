@@ -23,4 +23,6 @@ adsRoutes.post(
   adsController.submitRequestForAd
 );
 
+adsRoutes.get("/", authenticationMiddleware, adsController.getAds);
+
 export default adsRoutes;

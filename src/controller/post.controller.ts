@@ -8,7 +8,7 @@ import {
 } from "../../types/API/Post/types";
 import { getPostById } from "../services/post.services";
 import mongoose from "mongoose";
-import { postType, ratingsType } from "../utils/enums";
+import { postType, ratingsType, streamStatus } from "../utils/enums";
 import ErrorHandler from "../utils/ErrorHandler";
 import Ratings from "../model/ratings.model";
 import SavedItems from "../model/savedItems.model";
@@ -33,6 +33,7 @@ const createPost = TryCatch(
       description,
       image: files.image[0],
       scheduleDate: scheduleDate ? scheduleDate : undefined,
+      status: scheduleDate ? streamStatus.SCHEDULED : undefined,
       type: type,
     });
 
@@ -414,11 +415,7 @@ const getPosts = TryCatch(
     let finalData = posts;
     if (type == postType.STREAM) {
       finalData = posts.map((post: any) => {
-        let isPast = false;
-        if (post?.scheduleDate) {
-          isPast = moment.utc(post?.scheduleDate).isBefore(moment.utc());
-        }
-        if (isPast) {
+        if (post.status == streamStatus.COMPLETED) {
           return { ...post, scheduleDate: undefined };
         } else {
           return post;
@@ -800,17 +797,12 @@ const getPostDetailsById = TryCatch(
       senderId: userId,
     }).select("ratings");
 
-    let isPast = false;
-    if (post?.scheduleDate) {
-      isPast = moment.utc(post?.scheduleDate).isBefore(moment.utc());
-    }
-
     return SUCCESS(res, 200, "Post fetched successfully", {
       data: {
         post: {
           ...post.toObject(),
           ratings: ratings.length ? ratings[0]?.ratings : undefined,
-          scheduleDate: isPast ? undefined : post?.scheduleDate,
+          scheduleDate: post.status == streamStatus.COMPLETED ? undefined : post?.scheduleDate,
         },
       },
     });

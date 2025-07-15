@@ -80,14 +80,20 @@ export const documentVerificationStatus = {
   REJECT: "reject",
 };
 
-export const adStatus={
+export const adStatus = {
   APPROVED: "approved",
   IN_REVIEW: "in_review",
   REJECT: "reject",
-}
+};
 
 export const likesDislikesType = {
   SHARE: "share",
   STREAM: "stream",
   COMMENT: "comment",
+};
+
+export const streamStatus = {
+  SCHEDULED: "scheduled",
+  LIVE: "live",
+  COMPLETED: "completed",
 };

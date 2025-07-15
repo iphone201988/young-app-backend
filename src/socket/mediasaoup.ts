@@ -14,6 +14,7 @@ import { spawn } from "child_process";
 import { PutObjectCommand } from "@aws-sdk/client-s3";
 import { s3 } from "../middleware/multerS3.middleware";
 import Post from "../model/post.model";
+import { streamStatus } from "../utils/enums";
 
 console.log("mediasoup:L::", mediasoup);
 
@@ -536,7 +537,11 @@ const useMediaSoup = async (
           //   socket.emit("error", "Producer already exist");
           //   return;
           // }
-
+          const post = await Post.findById(roomName);
+          if (post && post?.scheduleDate && post?.status) {
+            post.status = streamStatus.LIVE;
+            await post.save();
+          }
           addProducer(producer, roomName);
           // isProducerExists(roomName);
 
@@ -1221,6 +1226,8 @@ a=ssrc:${videoSsrc} cname:${videoCname}
           const stream = await Post.findById(roomName);
           if (stream) {
             stream.streamUrl = "/" + s3Key;
+            if (stream?.scheduleDate && stream?.status)
+              stream.status = streamStatus.COMPLETED;
             await stream.save();
           }
 
