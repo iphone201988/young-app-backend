@@ -95,7 +95,12 @@ const registerUser = TryCatch(
         deviceType,
       });
       if (company) user.company = company;
-      if (longitude && latitude) {
+      if (
+        typeof longitude === "number" &&
+        typeof latitude === "number" &&
+        !isNaN(longitude) &&
+        !isNaN(latitude)
+      ) {
         user.location = {
           type: "Point",
           coordinates: [longitude, latitude],
@@ -368,7 +373,12 @@ const loginUser = TryCatch(
       }),
     ]);
 
-    if (longitude && latitude) {
+    if (
+      typeof longitude === "number" &&
+      typeof latitude === "number" &&
+      !isNaN(longitude) &&
+      !isNaN(latitude)
+    ) {
       user.location = {
         type: "Point",
         coordinates: [longitude, latitude],
@@ -649,7 +659,12 @@ const updateUser = TryCatch(
       if (investmentRealEstate)
         user.investmentRealEstate = investmentRealEstate;
     }
-    if (longitude && latitude) {
+    if (
+      typeof longitude === "number" &&
+      typeof latitude === "number" &&
+      !isNaN(longitude) &&
+      !isNaN(latitude)
+    ) {
       user.location = {
         type: "Point",
         coordinates: [longitude, latitude],
