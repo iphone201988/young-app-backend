@@ -400,6 +400,7 @@ const loginUser = TryCatch(
     user.deviceType = deviceType;
     user.deviceToken = deviceToken;
     user.lastLogin = new Date();
+    user.isDeactivatedByUser = false;
     await user.save();
 
     const data = await enable2FA(user, !user?.is2FAEnabled);
@@ -529,6 +530,7 @@ const updateUser = TryCatch(
       formUploadToBeRemoved = [],
       latitude,
       longitude,
+      isDeactivatedByUser,
     } = req.body;
 
     const files = getFiles(req, [
@@ -669,6 +671,13 @@ const updateUser = TryCatch(
         type: "Point",
         coordinates: [longitude, latitude],
       };
+    }
+
+    if (isDeactivatedByUser) {
+      user.isDeactivatedByUser = true;
+      user.jti = undefined;
+      user.deviceToken = undefined;
+      user.deviceType = undefined;
     }
 
     await user.save();

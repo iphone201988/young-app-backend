@@ -58,6 +58,7 @@ const getVaults = TryCatch(
       rating,
       byFollowers,
       bySave,
+      search,
     } = req.query;
     page = Number(page);
     limit = Number(limit);
@@ -66,6 +67,7 @@ const getVaults = TryCatch(
     const query: any = {
       access: vaultAccess.PUBLIC,
       isDeleted: false,
+      ...(search ? { title: { $regex: search, $options: "i" } } : {}),
     };
 
     const sortOptions: any = { createdAt: sort ? 1 : -1 };

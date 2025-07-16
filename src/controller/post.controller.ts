@@ -61,6 +61,7 @@ const getPosts = TryCatch(
       byFollowers,
       byBoom,
       bySave,
+      search,
     } = req.query;
     page = Number(page);
     limit = Number(limit);
@@ -179,6 +180,7 @@ const getPosts = TryCatch(
         $match: {
           type,
           isDeleted: false,
+          ...(search ? { title: { $regex: search, $options: "i" } } : {}),
         },
       },
       {
@@ -216,6 +218,7 @@ const getPosts = TryCatch(
         $match: {
           type,
           isDeleted: false,
+          ...(search ? { title: { $regex: search, $options: "i" } } : {}),
         },
       },
       {
@@ -802,7 +805,10 @@ const getPostDetailsById = TryCatch(
         post: {
           ...post.toObject(),
           ratings: ratings.length ? ratings[0]?.ratings : undefined,
-          scheduleDate: post.status == streamStatus.COMPLETED ? undefined : post?.scheduleDate,
+          scheduleDate:
+            post.status == streamStatus.COMPLETED
+              ? undefined
+              : post?.scheduleDate,
         },
       },
     });

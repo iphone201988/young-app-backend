@@ -17,6 +17,7 @@ export type GetVaultsRequest = {
   byFollowers: boolean;
   byBoom: boolean;
   bySave: boolean;
+  search: string;
 };
 
 export type VaultIdRequest = {

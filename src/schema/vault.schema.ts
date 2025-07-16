@@ -69,6 +69,7 @@ const getVaultsSchema = {
     bySave: booleanValidation("Saved", false),
     rating: numberValidation("Rating", false),
     distance: booleanValidation("Distance", false),
+    search: stringValidation("Search", false),
   }),
 };
 

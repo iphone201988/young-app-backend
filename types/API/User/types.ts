@@ -134,6 +134,7 @@ export type UpdateUserRequest = {
 
   latitude: number;
   longitude: number;
+  isDeactivatedByUser: boolean;
 };
 
 export type GetUsersRequest = {

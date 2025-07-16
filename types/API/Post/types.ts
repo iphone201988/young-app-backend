@@ -18,6 +18,7 @@ export type GetPostsRequest = {
   byFollowers: boolean;
   byBoom: boolean;
   bySave: boolean;
+  search: string;
 };
 
 export type AddCommentsRequest = {

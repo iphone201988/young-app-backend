@@ -107,6 +107,7 @@ const userSchema = new Schema<UserModel>(
     isRegistrationCompleted: { type: Boolean, default: false },
     isDeleted: { type: Boolean, default: false },
     isDeactivated: { type: Boolean, default: false },
+    isDeactivatedByUser: { type: Boolean, default: false },
     stripeCustomerId: { type: String },
     packageName: { type: String, enum: Object.values(accountPackage) },
     secret: { type: String },

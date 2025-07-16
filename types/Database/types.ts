@@ -40,6 +40,7 @@ export interface UserModel extends Document {
   isRegistrationCompleted: boolean;
   isDeleted: boolean;
   isDeactivated: boolean;
+  isDeactivatedByUser: boolean;
   stripeCustomerId: string;
   packageName: string;
   secret: string;
