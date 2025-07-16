@@ -177,6 +177,7 @@ const updateUserSchema = {
 
     longitude: numberValidation("Longitude", false),
     latitude: numberValidation("Latitude", false),
+    isDeactivatedByUser: booleanValidation("Deactivate", false),
   }),
 };
 

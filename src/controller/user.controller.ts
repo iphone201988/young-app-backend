@@ -306,18 +306,18 @@ const verify2FA = TryCatch(
     if (user?.isDeactivated)
       return next(new ErrorHandler("Your account has been deactivated", 400));
 
-    // const totp = new OTPAuth.TOTP({
-    //   issuer: process.env.TOTP_ISSUER,
-    //   label: process.env.TOTP_LABEL,
-    //   algorithm: "SHA1",
-    //   digits: 6,
-    //   secret: user.secret,
-    // });
+    const totp = new OTPAuth.TOTP({
+      issuer: process.env.TOTP_ISSUER,
+      label: process.env.TOTP_LABEL,
+      algorithm: "SHA1",
+      digits: 6,
+      secret: user.secret,
+    });
 
-    // const isValidated = totp.validate({ token: otp.toString(), window: 1 });
+    const isValidated = totp.validate({ token: otp.toString(), window: 1 });
 
-    // if (isValidated == null)
-    //   return next(new ErrorHandler("User authentication failed", 400));
+    if (isValidated == null)
+      return next(new ErrorHandler("User authentication failed", 400));
 
     const jti = generateRandomString(20);
     const token = generateJwtToken({ userId: user._id, jti });
@@ -360,6 +360,10 @@ const loginUser = TryCatch(
     if (username) user = await getUserByUsername(username);
 
     if (!user) return next(new ErrorHandler("Invalid credentials", 400));
+
+    if (user?.isDeactivated) {
+      return next(new ErrorHandler("Your account has been deactivated", 400));
+    }
 
     const isMatched = await user.matchPassword(password);
     if (!isMatched) return next(new ErrorHandler("Invalid credentials", 400));
