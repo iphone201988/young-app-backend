@@ -18,7 +18,7 @@ app.use(morgan("tiny"));
 app.use("/api/didit-webhook", async (req: any, res: any) => {
   try {
     const payload = req.body;
-    const { status } = payload;
+    let { status } = payload;
     // const { vendor_data } = payload.decision;
 
     if (!status) {
@@ -38,7 +38,6 @@ app.use("/api/didit-webhook", async (req: any, res: any) => {
     const user = await User.findById(payload.decision.vendor_data);
 
     if (user) {
-      let status: string;
       if (status == "Approved") {
         console.log("enter1");
         status = documentVerificationStatus.APPROVED;
