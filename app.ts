@@ -30,6 +30,7 @@ app.use("/api/didit-webhook", async (req: any, res: any) => {
 
     console.log(
       "Received webhook payload:",
+      payload,
       status,
       payload.decision.vendor_data
     );
@@ -39,10 +40,13 @@ app.use("/api/didit-webhook", async (req: any, res: any) => {
     if (user) {
       let status: string;
       if (status == "Approved") {
+        console.log("enter1");
         status = documentVerificationStatus.APPROVED;
       } else if (status == "Reject" || status == "Declined") {
+        console.log("enter2");
         status = documentVerificationStatus.REJECT;
       } else {
+        console.log("enter3");
         status = documentVerificationStatus.IN_REVIEW;
       }
       user.isDocumentVerified = status;
@@ -65,12 +69,9 @@ app.post("/transport-produce", async (req: Request, res: Response) => {
   res.status(200).send(producerId);
 });
 
-
-
-console.log(path.join(__dirname, "../public"))
+console.log(path.join(__dirname, "../public"));
 
 app.use("/sfu/:room", express.static(path.join(__dirname, "../public")));
-
 
 app.use("/api/v1", router);
 
@@ -80,6 +81,5 @@ app.use(
 );
 
 app.use(errorMiddleware);
-
 
 export default app;
