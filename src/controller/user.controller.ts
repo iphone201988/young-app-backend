@@ -845,9 +845,21 @@ const getUsers = TryCatch(
     res: Response,
     next: NextFunction
   ) => {
-    const { userId } = req;
-    const { category = "all", page = 1, limit = 20 } = req.query;
+    const { userId, user } = req;
+    let {
+      category = "all",
+      page = 1,
+      limit = 20,
+      distance,
+      rating,
+      byFollowers,
+      byCustomers,
+    } = req.query;
+    page = Number(page);
+    limit = Number(limit);
     const skip = (page - 1) * limit;
+    const longitude = user?.location?.coordinates[0];
+    const latitude = user?.location?.coordinates[1];
 
     const query: any = { _id: { $ne: userId }, isDeleted: false };
 
@@ -856,11 +868,153 @@ const getUsers = TryCatch(
       query.role = { $in: roles };
     }
 
-    const count = await User.countDocuments(query);
-    const users = await User.find(query)
-      .select("firstName lastName username profileImage role")
-      .skip(skip)
-      .limit(limit);
+    let initialQuery: any = {};
+
+    if (distance) {
+      if (
+        distance &&
+        typeof longitude === "number" &&
+        typeof latitude === "number" &&
+        !isNaN(longitude) &&
+        !isNaN(latitude)
+      ) {
+        initialQuery = {
+          $geoNear: {
+            near: {
+              type: "Point",
+              coordinates: [longitude, latitude],
+            },
+            distanceField: "distance", // will be in meters
+            spherical: true,
+            query: query,
+          },
+        };
+      }
+    } else {
+      initialQuery = { $match: query };
+    }
+
+    const pipeline: any = [];
+
+    const sortOptions: any = {};
+
+    if (rating) {
+      pipeline.push(
+        {
+          $lookup: {
+            from: "ratings",
+            let: { userId: "$_id" },
+            pipeline: [
+              {
+                $match: {
+                  $expr: {
+                    $and: [
+                      { $eq: ["$receiverId", "$$userId"] },
+                      { $eq: ["$type", ratingsType.USER] },
+                      { $eq: ["$ratings", Number(rating)] },
+                    ],
+                  },
+                },
+              },
+            ],
+            as: "ratingsMatched",
+          },
+        },
+        {
+          $match: {
+            "ratingsMatched.0": { $exists: true },
+          },
+        }
+      );
+    }
+
+    if (byFollowers) {
+      pipeline.push(
+        {
+          $lookup: {
+            from: "followers",
+            let: { userId: "$_id" },
+            pipeline: [
+              {
+                $match: {
+                  $expr: {
+                    $and: [
+                      { $eq: ["$userId", "$$userId"] },
+                      { $ne: ["$follower", null] },
+                    ],
+                  },
+                },
+              },
+            ],
+            as: "followersData",
+          },
+        },
+        {
+          $addFields: {
+            followersCount: { $size: "$followersData" },
+          },
+        }
+      );
+      sortOptions.followersCount = -1;
+    }
+
+    if (byCustomers) {
+      pipeline.push(
+        {
+          $lookup: {
+            from: "followers",
+            let: { userId: "$_id" },
+            pipeline: [
+              {
+                $match: {
+                  $expr: {
+                    $and: [
+                      { $eq: ["$userId", "$$userId"] },
+                      { $ne: ["$customer", null] },
+                    ],
+                  },
+                },
+              },
+            ],
+            as: "customersData",
+          },
+        },
+        {
+          $addFields: {
+            customersCount: { $size: "$customersData" },
+          },
+        }
+      );
+      sortOptions.customersCount = -1;
+    }
+
+    const countResult = await User.aggregate([
+      initialQuery,
+      ...pipeline,
+      { $count: "total" },
+    ]);
+
+    const total = countResult[0]?.total || 0;
+
+    const users = await User.aggregate([
+      initialQuery,
+      ...pipeline,
+      {
+        $skip: skip,
+      },
+      {
+        $limit: limit,
+      },
+      {
+        $project: {
+          firstName: 1,
+          lastName: 1,
+          username: 1,
+          profileImage: 1,
+          role: 1,
+        },
+      },
+    ]);
 
     return SUCCESS(res, 200, "Users fetched successfully", {
       data: {
@@ -869,7 +1023,7 @@ const getUsers = TryCatch(
       pagination: {
         page: Number(page),
         limit: Number(limit),
-        totalPages: Math.ceil(count / limit),
+        totalPages: Math.ceil(total / limit),
       },
     });
   }
@@ -943,7 +1097,7 @@ const getLatestUsers = TryCatch(
     pipeline.push(
       { $unwind: "$users" },
       {
-        $replaceRoot: { newRoot: "$users" },  
+        $replaceRoot: { newRoot: "$users" },
       },
       {
         $lookup: {

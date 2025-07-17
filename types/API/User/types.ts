@@ -141,6 +141,10 @@ export type GetUsersRequest = {
   category?: string;
   page?: number;
   limit?: number;
+  distance: boolean;
+  rating: number;
+  byFollowers: boolean;
+  byCustomers: boolean;
 };
 
 export type ContactUsRequest = {

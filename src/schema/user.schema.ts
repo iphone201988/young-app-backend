@@ -192,6 +192,11 @@ const getUsersSchema = {
     page: numberValidation("Page", false),
     limit: numberValidation("Limit", false),
     category: stringValidation("Category", false),
+
+    distance: booleanValidation("Distance", false),
+    rating: numberValidation("Rating", false),
+    byFollowers: booleanValidation("Followers", false),
+    byCustomers: booleanValidation("Customers", false),
   }),
 };
 
