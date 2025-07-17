@@ -95,8 +95,19 @@ const getPosts = TryCatch(
         {
           $lookup: {
             from: "followers",
-            localField: "userId._id",
-            foreignField: "userId",
+            let: { userId: "$userId._id" },
+            pipeline: [
+              {
+                $match: {
+                  $expr: {
+                    $and: [
+                      { $eq: ["$userId", "$$userId"] },
+                      { $ne: ["$follower", null] },
+                    ],
+                  },
+                },
+              },
+            ],
             as: "totalFollowers",
           },
         },
@@ -106,6 +117,7 @@ const getPosts = TryCatch(
           },
         }
       );
+
       sortOptions.followersCount = -1;
     }
     if (byBoom) {
@@ -139,7 +151,13 @@ const getPosts = TryCatch(
         }
       );
     }
-    if (distance) {
+    if (
+      distance &&
+      typeof longitude === "number" &&
+      typeof latitude === "number" &&
+      !isNaN(longitude) &&
+      !isNaN(latitude)
+    ) {
       filterQuery.push({
         $addFields: {
           distance: {

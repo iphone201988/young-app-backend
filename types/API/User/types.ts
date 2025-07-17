@@ -152,4 +152,8 @@ export type ContactUsRequest = {
 
 export type GetLatestUsersRequest = {
   category?: string;
+  distance: boolean;
+  rating: number;
+  byFollowers: boolean;
+  byCustomers: boolean;
 };

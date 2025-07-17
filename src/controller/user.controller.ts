@@ -881,8 +881,10 @@ const getLatestUsers = TryCatch(
     res: Response,
     next: NextFunction
   ) => {
-    const { userId } = req;
-    const { category } = req.query;
+    const { userId, user } = req;
+    const { category, distance, rating, byFollowers, byCustomers } = req.query;
+    const longitude = user?.location?.coordinates[0];
+    const latitude = user?.location?.coordinates[1];
 
     const query: any = {
       _id: { $ne: new mongoose.Types.ObjectId(userId) },
@@ -891,10 +893,34 @@ const getLatestUsers = TryCatch(
 
     if (category) query.role = category;
 
+    let initialQuery: any = {};
+
+    if (distance) {
+      if (
+        distance &&
+        typeof longitude === "number" &&
+        typeof latitude === "number" &&
+        !isNaN(longitude) &&
+        !isNaN(latitude)
+      ) {
+        initialQuery = {
+          $geoNear: {
+            near: {
+              type: "Point",
+              coordinates: [longitude, latitude],
+            },
+            distanceField: "distance", // will be in meters
+            spherical: true,
+            query: query,
+          },
+        };
+      }
+    } else {
+      initialQuery = { $match: query };
+    }
+
     const pipeline: any = [
-      {
-        $match: query,
-      },
+      initialQuery,
       {
         $sort: { createdAt: -1 },
       },
@@ -917,7 +943,7 @@ const getLatestUsers = TryCatch(
     pipeline.push(
       { $unwind: "$users" },
       {
-        $replaceRoot: { newRoot: "$users" },
+        $replaceRoot: { newRoot: "$users" },  
       },
       {
         $lookup: {
@@ -960,18 +986,117 @@ const getLatestUsers = TryCatch(
         $set: {
           isRated: "$isRated.ratings",
         },
-      },
-      {
-        $project: {
-          firstName: 1,
-          lastName: 1,
-          username: 1,
-          profileImage: 1,
-          role: 1,
-          isRated: 1,
-        },
       }
     );
+
+    const sortOptions: any = {};
+
+    if (rating) {
+      pipeline.push(
+        {
+          $lookup: {
+            from: "ratings",
+            let: { userId: "$_id" },
+            pipeline: [
+              {
+                $match: {
+                  $expr: {
+                    $and: [
+                      { $eq: ["$receiverId", "$$userId"] },
+                      { $eq: ["$type", ratingsType.USER] },
+                      { $eq: ["$ratings", Number(rating)] },
+                    ],
+                  },
+                },
+              },
+            ],
+            as: "ratingsMatched",
+          },
+        },
+        {
+          $match: {
+            "ratingsMatched.0": { $exists: true },
+          },
+        }
+      );
+    }
+
+    if (byFollowers) {
+      pipeline.push(
+        {
+          $lookup: {
+            from: "followers",
+            let: { userId: "$_id" },
+            pipeline: [
+              {
+                $match: {
+                  $expr: {
+                    $and: [
+                      { $eq: ["$userId", "$$userId"] },
+                      { $ne: ["$follower", null] },
+                    ],
+                  },
+                },
+              },
+            ],
+            as: "followersData",
+          },
+        },
+        {
+          $addFields: {
+            followersCount: { $size: "$followersData" },
+          },
+        }
+      );
+      sortOptions.followersCount = -1;
+    }
+
+    if (byCustomers) {
+      pipeline.push(
+        {
+          $lookup: {
+            from: "followers",
+            let: { userId: "$_id" },
+            pipeline: [
+              {
+                $match: {
+                  $expr: {
+                    $and: [
+                      { $eq: ["$userId", "$$userId"] },
+                      { $ne: ["$customer", null] },
+                    ],
+                  },
+                },
+              },
+            ],
+            as: "customersData",
+          },
+        },
+        {
+          $addFields: {
+            customersCount: { $size: "$customersData" },
+          },
+        }
+      );
+      sortOptions.customersCount = -1;
+    }
+
+    if (Object.keys(sortOptions).length) {
+      pipeline.push({
+        $sort: sortOptions,
+      });
+    }
+
+    pipeline.push({
+      $project: {
+        firstName: 1,
+        lastName: 1,
+        username: 1,
+        profileImage: 1,
+        role: 1,
+        isRated: 1,
+      },
+    });
 
     const users = await User.aggregate(pipeline);
 

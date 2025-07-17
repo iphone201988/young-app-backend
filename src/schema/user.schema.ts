@@ -207,6 +207,10 @@ const contactUsSchema = {
 const getLatestUsersSchema = {
   query: Joi.object({
     category: stringValidation("Category", false),
+    distance: booleanValidation("Distance", false),
+    rating: numberValidation("Rating", false),
+    byFollowers: booleanValidation("Followers", false),
+    byCustomers: booleanValidation("Customers", false),
   }),
 };
 
