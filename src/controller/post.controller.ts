@@ -950,6 +950,8 @@ const downloadHistory = TryCatch(
     const finalData = posts.map((post: any) => ({
       ...post,
       image: process.env.AWS_S3_URI + post.image,
+      userId: post._id,
+      _id: undefined,
     }));
 
     return SUCCESS(res, 200, "Posts history fetched successfully", {
