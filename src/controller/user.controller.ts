@@ -1009,6 +1009,25 @@ const getUsers = TryCatch(
       initialQuery,
       ...pipeline,
       {
+        $lookup: {
+          from: "ratings",
+          let: { userId: "$_id" },
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $and: [
+                    { $eq: ["$receiverId", "$$userId"] },
+                    { $eq: ["$type", ratingsType.USER] },
+                  ],
+                },
+              },
+            },
+          ],
+          as: "ratings",
+        },
+      },
+      {
         $skip: skip,
       },
       {
@@ -1021,6 +1040,9 @@ const getUsers = TryCatch(
           username: 1,
           profileImage: 1,
           role: 1,
+          ratings: {
+            $ifNull: [{ $arrayElemAt: ["$ratings.ratings", 0] }, null],
+          },
         },
       },
     ]);
