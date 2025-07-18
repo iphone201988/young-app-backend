@@ -854,6 +854,7 @@ const getUsers = TryCatch(
       rating,
       byFollowers,
       byCustomers,
+      search,
     } = req.query;
     page = Number(page);
     limit = Number(limit);
@@ -866,6 +867,14 @@ const getUsers = TryCatch(
     if (category != "all") {
       const roles = category.split(",");
       query.role = { $in: roles };
+    }
+
+    if (search) {
+      query.$or = [
+        { firstName: { $regex: search, $options: "i" } },
+        { lastName: { $regex: search, $options: "i" } },
+        { username: { $regex: search, $options: "i" } },
+      ];
     }
 
     let initialQuery: any = {};

@@ -197,6 +197,7 @@ const getUsersSchema = {
     rating: numberValidation("Rating", false),
     byFollowers: booleanValidation("Followers", false),
     byCustomers: booleanValidation("Customers", false),
+    search: stringValidation("Search", false),
   }),
 };
 

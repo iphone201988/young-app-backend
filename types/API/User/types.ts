@@ -145,6 +145,7 @@ export type GetUsersRequest = {
   rating: number;
   byFollowers: boolean;
   byCustomers: boolean;
+  search: string;
 };
 
 export type ContactUsRequest = {
