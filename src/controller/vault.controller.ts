@@ -123,34 +123,34 @@ const getVaults = TryCatch(
 
       sortOptions.followersCount = -1;
     }
-    if (rating) {
-      filterQuery.push(
-        {
-          $lookup: {
-            from: "ratings",
-            let: { id: "$_id" },
-            pipeline: [
-              {
-                $match: {
-                  $expr: {
-                    $and: [
-                      { $eq: ["$vaultId", "$$id"] },
-                      { $eq: ["$ratings", rating] },
-                    ],
-                  },
-                },
-              },
-            ],
-            as: "ratings",
-          },
-        },
-        {
-          $match: {
-            ratings: { $ne: [] }, // only keep posts that have matching ratings
-          },
-        }
-      );
-    }
+    // if (rating) {
+    //   filterQuery.push(
+    //     {
+    //       $lookup: {
+    //         from: "ratings",
+    //         let: { id: "$_id" },
+    //         pipeline: [
+    //           {
+    //             $match: {
+    //               $expr: {
+    //                 $and: [
+    //                   { $eq: ["$vaultId", "$$id"] },
+    //                   { $eq: ["$ratings", rating] },
+    //                 ],
+    //               },
+    //             },
+    //           },
+    //         ],
+    //         as: "ratings",
+    //       },
+    //     },
+    //     {
+    //       $match: {
+    //         ratings: { $ne: [] }, // only keep posts that have matching ratings
+    //       },
+    //     }
+    //   );
+    // }
     if (
       distance &&
       typeof longitude === "number" &&
@@ -330,6 +330,7 @@ const getVaults = TryCatch(
                 $expr: { $eq: ["$vaultId", "$$id"] },
                 type: postType.VAULT,
                 senderId: new mongoose.Types.ObjectId(userId),
+                ...(rating ? { ratings: Number(rating) } : {}),
               },
             },
             {
@@ -342,6 +343,15 @@ const getVaults = TryCatch(
           as: "ratings",
         },
       },
+      ...(rating
+        ? [
+            {
+              $match: {
+                ratings: { $ne: [] },
+              },
+            },
+          ]
+        : []),
       {
         $unwind: {
           path: "$ratings",

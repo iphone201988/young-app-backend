@@ -132,34 +132,35 @@ const getPosts = TryCatch(
     if (byBoom) {
       sortOptions.likesCount = -1;
     }
-    if (rating) {
-      filterQuery.push(
-        {
-          $lookup: {
-            from: "ratings",
-            let: { postId: "$_id" },
-            pipeline: [
-              {
-                $match: {
-                  $expr: {
-                    $and: [
-                      { $eq: ["$postId", "$$postId"] },
-                      { $eq: ["$ratings", rating] },
-                    ],
-                  },
-                },
-              },
-            ],
-            as: "ratings",
-          },
-        },
-        {
-          $match: {
-            ratings: { $ne: [] }, // only keep posts that have matching ratings
-          },
-        }
-      );
-    }
+    // if (rating) {
+    //   filterQuery.push(
+    //     {
+    //       $lookup: {
+    //         from: "ratings",
+    //         let: { postId: "$_id" },
+    //         pipeline: [
+    //           {
+    //             $match: {
+    //               $expr: {
+    //                 $and: [
+    //                   { $eq: ["$postId", "$$postId"] },
+    //                   { $eq: ["$ratings", rating] },
+    //                   {$eq:["$senderId", new mongoose.Types.ObjectId(userId)],}
+    //                 ],
+    //               },
+    //             },
+    //           },
+    //         ],
+    //         as: "ratings",
+    //       },
+    //     },
+    //     {
+    //       $match: {
+    //         ratings: { $ne: [] }, // only keep posts that have matching ratings
+    //       },
+    //     }
+    //   );
+    // }
     if (
       distance &&
       typeof longitude === "number" &&
@@ -240,6 +241,13 @@ const getPosts = TryCatch(
       });
     }
 
+    console.log({
+      $expr: { $eq: ["$postId", "$$id"] },
+      type: type,
+      senderId: new mongoose.Types.ObjectId(userId),
+      ...(rating ? { ratings: rating } : {}),
+    });
+
     const posts = await Post.aggregate([
       {
         $match: {
@@ -306,14 +314,6 @@ const getPosts = TryCatch(
           as: "isReported",
         },
       },
-      // {
-      //   $lookup: {
-      //     from: "ratings",
-      //     localField: "_id",
-      //     foreignField: "postId",
-      //     as: "ratings",
-      //   },
-      // },
       {
         $lookup: {
           from: "ratings",
@@ -324,6 +324,7 @@ const getPosts = TryCatch(
                 $expr: { $eq: ["$postId", "$$id"] },
                 type: type,
                 senderId: new mongoose.Types.ObjectId(userId),
+                ...(rating ? { ratings: Number(rating) } : {}),
               },
             },
             {
@@ -336,6 +337,15 @@ const getPosts = TryCatch(
           as: "ratings",
         },
       },
+      ...(rating
+        ? [
+            {
+              $match: {
+                ratings: { $ne: [] },
+              },
+            },
+          ]
+        : []),
       {
         $unwind: {
           path: "$ratings",
