@@ -1016,15 +1016,19 @@ const getUsers = TryCatch(
             {
               $match: {
                 $expr: {
-                  $and: [
-                    { $eq: ["$receiverId", "$$userId"] },
-                    { $eq: ["$type", ratingsType.USER] },
-                  ],
+                  $eq: ["$receiverId", "$$userId"],
                 },
+                type: ratingsType.USER,
+                senderId: new mongoose.Types.ObjectId(userId),
               },
             },
           ],
-          as: "ratings",
+          as: "isRated",
+        },
+      },
+      {
+        $addFields: {
+          isRated: { $arrayElemAt: ["$isRated", 0] },
         },
       },
       {
@@ -1040,9 +1044,10 @@ const getUsers = TryCatch(
           username: 1,
           profileImage: 1,
           role: 1,
-          ratings: {
-            $ifNull: [{ $arrayElemAt: ["$ratings.ratings", 0] }, null],
-          },
+          isRated: "$isRated.ratings",
+          // ratings: {
+          //   $ifNull: [{ $arrayElemAt: ["$ratings.ratings", 0] }, null],
+          // },
         },
       },
     ]);

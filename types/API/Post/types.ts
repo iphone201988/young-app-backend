@@ -5,6 +5,7 @@ export type CreatePostRequest = {
   description: string;
   type: string;
   scheduleDate: string;
+  symbolValue: string;
 };
 
 export type GetPostsRequest = {

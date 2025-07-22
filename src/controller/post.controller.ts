@@ -22,7 +22,15 @@ const createPost = TryCatch(
     next: NextFunction
   ) => {
     const { userId } = req;
-    const { title, symbol, topic, description, type, scheduleDate } = req.body;
+    const {
+      title,
+      symbol,
+      symbolValue,
+      topic,
+      description,
+      type,
+      scheduleDate,
+    } = req.body;
     const files = getFiles(req, ["image"]);
 
     const post = await Post.create({
@@ -35,6 +43,7 @@ const createPost = TryCatch(
       scheduleDate: scheduleDate ? scheduleDate : undefined,
       status: scheduleDate ? streamStatus.SCHEDULED : undefined,
       type: type,
+      symbolValue,
     });
 
     return SUCCESS(res, 201, "Post created successfully", {

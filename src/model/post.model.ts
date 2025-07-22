@@ -13,6 +13,7 @@ const postSchema = new Schema<PostModel>(
     topic: { type: String, enum: Object.values(topics) },
     description: { type: String },
     image: { type: String },
+    symbolValue: { type: String },
     type: { type: String, enum: Object.values(postType) },
     scheduleDate: { type: Date },
     streamUrl: { type: String },

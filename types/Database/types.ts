@@ -116,6 +116,7 @@ export interface PostModel extends Document {
   title: string;
   symbol: string;
   topic: string;
+  symbolValue: string;
   description: string;
   image: string;
   streamUrl: string;

@@ -77,7 +77,7 @@ const completeRegistrationSchema = {
     industry: stringValidation("Industry", false),
     interestedIn: stringValidation("Interested IN", false),
     stripeCustomerId: stringValidation("Stripe Customer ID", false),
-    packageName: specificStringValidation("Package", accountPackage),
+    packageName: specificStringValidation("Package", accountPackage,false),
   }),
 };
 

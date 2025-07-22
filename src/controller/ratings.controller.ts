@@ -7,6 +7,9 @@ import {
 } from "../../types/API/Ratings/types";
 import { ratingsType } from "../utils/enums";
 import mongoose from "mongoose";
+import { getUserById } from "../services/user.services";
+import { getPostById } from "../services/post.services";
+import { getVaultById } from "../services/vault.services";
 
 const giveRatings = TryCatch(
   async (
@@ -18,9 +21,18 @@ const giveRatings = TryCatch(
     const { ratings, type, id } = req.body;
 
     const query: any = { senderId: userId, type };
-    if (type == ratingsType.USER) query.receiverId = id;
-    if (type == ratingsType.SHARE || type == ratingsType.STREAM) query.postId = id;
-    if (type == ratingsType.VAULT) query.vaultId = id;
+    if (type == ratingsType.USER) {
+      getUserById(id);
+      query.receiverId = id;
+    }
+    if (type == ratingsType.SHARE || type == ratingsType.STREAM) {
+      getPostById(id);
+      query.postId = id;
+    }
+    if (type == ratingsType.VAULT) {
+      getVaultById(id);
+      query.vaultId = id;
+    }
 
     const rating = await Ratings.findOne(query);
 
@@ -30,7 +42,7 @@ const giveRatings = TryCatch(
     } else {
       await Ratings.create({ ratings, ...query });
     }
-    
+
     return SUCCESS(res, 201, "Ratings added successfully", {
       data: { ratings },
     });
