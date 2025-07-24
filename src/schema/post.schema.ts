@@ -12,7 +12,7 @@ const createPostSchema = {
   body: Joi.object({
     title: stringValidation("Title"),
     description: stringValidation("Description"),
-    symbolValue: stringValidation("Symbol Value"),
+    symbolValue: stringValidation("Symbol Value",false),
     topic: specificStringValidation("Topic", topics),
     type: specificStringValidation("Type", postType),
     symbol: Joi.string()
