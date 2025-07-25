@@ -74,7 +74,7 @@ export const calculateAverageRatings = (allRatings: any) => {
     averageRating = total / allRatings.ratings.length;
   }
 
-  return averageRating.toFixed(2);
+  return Number(averageRating.toFixed(2));
 };
 
 export const filterUser = (user: UserModel) => {

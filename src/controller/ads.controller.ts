@@ -2,6 +2,7 @@ import { NextFunction, Request, Response } from "express";
 import { SUCCESS, TryCatch, getFiles } from "../utils/helper";
 import Advertise from "../model/advertise.model";
 import { GetAdsRequest, SubmitAdRequest } from "../../types/API/Ads/types";
+import User from "../model/user.model";
 
 const submitRequestForAd = TryCatch(
   async (
@@ -44,87 +45,70 @@ const getAds = TryCatch(
     const viewerServices = user.servicesInterested || "";
     const viewerInterestedIn = user.interestedIn || "";
 
-    // Fetch total count for matching ads
-    const totalFiltered = await Advertise.aggregate([
+    const locationQuery = [];
+
+    if (
+      viewerLocation &&
+      Array.isArray(viewerLocation) &&
+      viewerLocation.length === 2
+    ) {
+      locationQuery.push(
+        {
+          $geoNear: {
+            near: { type: "Point", coordinates: viewerLocation },
+            distanceField: "distance",
+            spherical: true,
+          },
+        },
+        {
+          $match: {
+            distance: { $lte: 50000 },
+          },
+        }
+      );
+    }
+
+    // First, find nearby users using $geoNear at the top level
+    const nearbyUsers = await User.aggregate([
+      ...locationQuery,
       {
-        $lookup: {
-          from: "users",
-          let: { userId: "$userId" },
-          pipeline: [
-            {
-              $geoNear: {
-                near: { type: "Point", coordinates: viewerLocation },
-                distanceField: "distance",
-                maxDistance: 50000,
-                spherical: true,
-                query: { $expr: { $eq: ["$_id", "$$userId"] } },
-              },
-            },
-            {
-              $match: {
-                $or: [
-                  { topicsOfInterest: { $in: viewerTopics } },
-                  { servicesInterested: viewerServices },
-                  { interestedIn: viewerInterestedIn },
-                ],
-              },
-            },
+        $match: {
+          $or: [
+            { topicsOfInterest: { $in: viewerTopics } },
+            { servicesInterested: viewerServices },
+            { interestedIn: viewerInterestedIn },
           ],
-          as: "poster",
         },
       },
       {
+        $project: {
+          _id: 1,
+        },
+      },
+    ]);
+
+    const nearbyUserIds = nearbyUsers.map((user) => user._id);
+
+    // Fetch total count for matching ads
+    const totalFiltered = await Advertise.aggregate([
+      {
         $match: {
-          "poster.0": { $exists: true },
+          userId: { $in: nearbyUserIds },
         },
       },
       { $count: "count" },
     ]);
 
-    // Fetch paginated ads (if any)
+    // Fetch paginated ads
     let ads = await Advertise.aggregate([
       {
-        $lookup: {
-          from: "users",
-          let: { userId: "$userId" },
-          pipeline: [
-            {
-              $geoNear: {
-                near: { type: "Point", coordinates: viewerLocation },
-                distanceField: "distance",
-                maxDistance: 50000,
-                spherical: true,
-                query: { $expr: { $eq: ["$_id", "$$userId"] } },
-              },
-            },
-            {
-              $match: {
-                $or: [
-                  { topicsOfInterest: { $in: viewerTopics } },
-                  { servicesInterested: viewerServices },
-                  { interestedIn: viewerInterestedIn },
-                ],
-              },
-            },
-          ],
-          as: "poster",
-        },
-      },
-      {
         $match: {
-          "poster.0": { $exists: true },
+          userId: { $in: nearbyUserIds },
         },
       },
       { $skip: skip },
       { $limit: limit },
-      {
-        $project: {
-          poster: 0,
-        },
-      },
     ]);
-
-    console.log("ads::::", ads.length);
 
     // If no matching ads found, fallback to all ads
     let total = totalFiltered[0]?.count || 0;
