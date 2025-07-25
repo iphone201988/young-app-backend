@@ -60,6 +60,23 @@ export const generateBase32Secret = () => {
   return base32;
 };
 
+export const calculateAverageRatings = (allRatings: any) => {
+  let averageRating = 0;
+  if (
+    allRatings &&
+    Array.isArray(allRatings.ratings) &&
+    allRatings.ratings.length > 0
+  ) {
+    const total = allRatings.ratings.reduce(
+      (sum: any, r: any) => sum + r.ratings,
+      0
+    );
+    averageRating = total / allRatings.ratings.length;
+  }
+
+  return averageRating.toFixed(2);
+};
+
 export const filterUser = (user: UserModel) => {
   return {
     ...user,

@@ -3,6 +3,7 @@ import {
   SUCCESS,
   TryCatch,
   addMinutesToCurrentTime,
+  calculateAverageRatings,
   filterUser,
   generateJwtToken,
   generateOTP,
@@ -744,6 +745,8 @@ const getUserProfile = TryCatch(
         receiverId: req.query.userId,
       }).select("ratings");
 
+      isRated = isRated?.ratings ? isRated?.ratings : null;
+
       isReported = await Report.findOne({
         reporterUserId: loggedInUser._id,
         userId: req.query.userId,
@@ -753,6 +756,14 @@ const getUserProfile = TryCatch(
         chatUsers: { $all: [req.userId, req.query.userId] },
       });
       chatId = chat?._id;
+    }
+
+    if (!req.query.userId) {
+      isRated = await Ratings.findOne({
+        receiverId: loggedInUser._id,
+      }).select("ratings");
+
+      isRated = calculateAverageRatings(isRated);
     }
 
     const ratings = await Ratings.find({ receiverId: userId }).select(
@@ -788,7 +799,7 @@ const getUserProfile = TryCatch(
           ...filterUser(userProfile.toObject()),
           ratings,
           chatId,
-          isRated: isRated?.ratings ? isRated?.ratings : null,
+          isRated,
           isFollowed: isFollowed ? true : false,
           isReported: isReported ? true : false,
           isConnectedWithProfile: isConnectedWithProfile ? true : false,
