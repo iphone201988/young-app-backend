@@ -62,16 +62,12 @@ export const generateBase32Secret = () => {
 
 export const calculateAverageRatings = (allRatings: any) => {
   let averageRating = 0;
-  if (
-    allRatings &&
-    Array.isArray(allRatings.ratings) &&
-    allRatings.ratings.length > 0
-  ) {
-    const total = allRatings.ratings.reduce(
+  if (allRatings && allRatings.length) {
+    const total = allRatings.reduce(
       (sum: any, r: any) => sum + r.ratings,
       0
     );
-    averageRating = total / allRatings.ratings.length;
+    averageRating = total / allRatings.length;
   }
 
   return Number(averageRating.toFixed(2));

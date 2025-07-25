@@ -761,16 +761,16 @@ const getUserProfile = TryCatch(
     }
 
     if (!req.query.userId) {
-      isRated = await Ratings.findOne({
+      isRated = await Ratings.find({
         receiverId: loggedInUser._id,
       }).select("ratings");
 
       isRated = calculateAverageRatings(isRated);
     }
 
-    const ratings = await Ratings.find({ receiverId: userId }).select(
-      "ratings"
-    );
+    // const ratings = await Ratings.find({ receiverId: userId }).select(
+    //   "ratings"
+    // );
 
     if (req.user) {
       [isFollowed, isConnectedWithProfile, sharesCount] = await Promise.all([
@@ -799,9 +799,9 @@ const getUserProfile = TryCatch(
       data: {
         user: {
           ...filterUser(userProfile.toObject()),
-          ratings,
+          // ratings,
           chatId,
-          isRated,
+          isRated: isRated ? isRated : undefined,
           isFollowed: isFollowed ? true : false,
           isReported: isReported ? true : false,
           isConnectedWithProfile: isConnectedWithProfile ? true : false,
