@@ -72,8 +72,12 @@ const getVaults = TryCatch(
 
     const sortOptions: any = { createdAt: sort ? 1 : -1 };
     const filterQuery = [];
-    const longitude = user?.location?.coordinates[0];
-    const latitude = user?.location?.coordinates[1];
+    const longitude = user?.location?.coordinates?.length
+      ? user?.location?.coordinates[0]
+      : null;
+    const latitude = user?.location?.coordinates?.length
+      ? user?.location?.coordinates[1]
+      : null;
 
     if (bySave) {
       filterQuery.push({

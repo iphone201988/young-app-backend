@@ -353,6 +353,8 @@ const loginUser = TryCatch(
       latitude,
     } = req.body;
 
+    console.log("longitude,latitude,", longitude, latitude);
+
     let user: UserModel | null;
     if (email) {
       email = email.toLowerCase();
@@ -870,8 +872,12 @@ const getUsers = TryCatch(
     page = Number(page);
     limit = Number(limit);
     const skip = (page - 1) * limit;
-    const longitude = user?.location?.coordinates[0];
-    const latitude = user?.location?.coordinates[1];
+    const longitude = user?.location?.coordinates?.length
+      ? user?.location?.coordinates[0]
+      : null;
+    const latitude = user?.location?.coordinates?.length
+      ? user?.location?.coordinates[1]
+      : null;
 
     const query: any = { _id: { $ne: userId }, isDeleted: false };
 
