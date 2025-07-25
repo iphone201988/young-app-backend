@@ -257,7 +257,14 @@ const getPosts = TryCatch(
         $match: {
           type,
           isDeleted: false,
-          ...(search ? { title: { $regex: search, $options: "i" } } : {}),
+          ...(search
+            ? {
+                $or: [
+                  { title: { $regex: search, $options: "i" } },
+                  { description: { $regex: search, $options: "i" } },
+                ],
+              }
+            : {}),
         },
       },
       {

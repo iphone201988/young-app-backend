@@ -67,7 +67,14 @@ const getVaults = TryCatch(
     const query: any = {
       access: vaultAccess.PUBLIC,
       isDeleted: false,
-      ...(search ? { title: { $regex: search, $options: "i" } } : {}),
+      ...(search
+        ? {
+            $or: [
+              { title: { $regex: search, $options: "i" } },
+              { description: { $regex: search, $options: "i" } },
+            ],
+          }
+        : {}),
     };
 
     const sortOptions: any = { createdAt: sort ? 1 : -1 };
