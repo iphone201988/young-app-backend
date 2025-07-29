@@ -9,7 +9,7 @@ const getChats = TryCatch(
   async (req: Request, res: Response, next: NextFunction) => {
     const { userId } = req;
 
-    const chats = await Chat.find({ chatUsers: userId })
+    const chats = await Chat.find({ chatUsers: { $in: [userId] } })
       .populate("chatUsers", "username role profileImage")
       .populate("lastMessage", "message")
       .select("-isDeleted -updatedAt -__v");
